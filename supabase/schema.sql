@@ -217,6 +217,16 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- ====================================================================
+-- GRANT PERMISSIONS TO ANON AND AUTHENTICATED ROLES FOR SUPABASE POSTGREST API
+-- ====================================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated;
+
+-- ====================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES FOR MULTI-ROLE ACCESS CONTROL
 -- ====================================================================
 
@@ -241,6 +251,8 @@ CREATE POLICY "Allow full access for authenticated staff" ON contracts FOR ALL U
 CREATE POLICY "Allow full access for authenticated schedules" ON payment_schedules FOR ALL USING (true);
 CREATE POLICY "Allow full access for authenticated tenants" ON tenants FOR ALL USING (true);
 CREATE POLICY "Allow full access for authenticated temp_residences" ON temp_residences FOR ALL USING (true);
+CREATE POLICY "Allow full access for users" ON users FOR ALL USING (true);
+CREATE POLICY "Allow full access for notifications" ON notifications FOR ALL USING (true);
 
 -- ====================================================================
 -- INITIAL MOCK SEED DATA INSERTION
