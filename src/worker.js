@@ -21,7 +21,7 @@ let driveTokenExpiresAt = 0;
  */
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, Range, X-Requested-With, X-File-Name, X-File-Mime, X-Folder-Type, X-User-Email, X-Category, X-Sub-Category, X-Entity-Id, X-Period, X-Folder-Path, x-file-name, x-file-mime, x-folder-type, x-user-email, x-category, x-sub-category, x-entity-id, x-period, x-folder-path, *',
   'Access-Control-Expose-Headers': 'Content-Range, Accept-Ranges, Content-Length, Content-Type',
   'Access-Control-Max-Age': '86400',
@@ -518,7 +518,7 @@ export default {
     // Supports HTTP Range header (206 Partial Content), Content-Type, Content-Length,
     // Cache-Control, and automatic 401 token refresh retry.
     // =========================================================================
-    if (request.method === 'GET' && (url.pathname.startsWith('/api/drive/file/') || url.pathname.startsWith('/api/drive/view/'))) {
+    if ((request.method === 'GET' || request.method === 'HEAD') && (url.pathname.startsWith('/api/drive/file/') || url.pathname.startsWith('/api/drive/view/'))) {
       const parts = url.pathname.split('/').filter(Boolean);
       const fileId = parts[parts.length - 1];
 
@@ -575,6 +575,13 @@ export default {
           responseHeaders.set('Content-Length', driveRes.headers.get('content-length'));
         }
 
+        if (request.method === 'HEAD') {
+          return new Response(null, {
+            status: driveRes.status === 206 ? 206 : 200,
+            headers: responseHeaders
+          });
+        }
+
         return new Response(driveRes.body, {
           status: driveRes.status === 206 ? 206 : 200,
           headers: responseHeaders
@@ -593,7 +600,7 @@ export default {
     // Supports query param ?sz= (default s400, e.g. sz=s400, sz=s800, sz=w500-h500),
     // fetches thumbnailLink or falls back to direct media, with aggressive caching.
     // =========================================================================
-    if (request.method === 'GET' && url.pathname.startsWith('/api/drive/thumbnail/')) {
+    if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/api/drive/thumbnail/')) {
       const parts = url.pathname.split('/').filter(Boolean);
       const fileId = parts[parts.length - 1];
       const sz = url.searchParams.get('sz') || 's400';
@@ -650,6 +657,12 @@ export default {
             if (thumbRes.headers.get('content-length')) {
               responseHeaders.set('Content-Length', thumbRes.headers.get('content-length'));
             }
+            if (request.method === 'HEAD') {
+              return new Response(null, {
+                status: 200,
+                headers: responseHeaders
+              });
+            }
             return new Response(thumbRes.body, {
               status: 200,
               headers: responseHeaders
@@ -670,6 +683,12 @@ export default {
           });
           if (fileRes.headers.get('content-length')) {
             responseHeaders.set('Content-Length', fileRes.headers.get('content-length'));
+          }
+          if (request.method === 'HEAD') {
+            return new Response(null, {
+              status: 200,
+              headers: responseHeaders
+            });
           }
           return new Response(fileRes.body, {
             status: 200,

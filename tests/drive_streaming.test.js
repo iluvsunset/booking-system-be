@@ -89,7 +89,7 @@ await itAsync('Worker responds to OPTIONS with 204 and CORS headers', async () =
   const res = await worker.fetch(req, {});
   assert.strictEqual(res.status, 204);
   assert.strictEqual(res.headers.get('Access-Control-Allow-Origin'), '*');
-  assert.strictEqual(res.headers.get('Access-Control-Allow-Methods'), 'GET, POST, PUT, DELETE, OPTIONS');
+  assert.strictEqual(res.headers.get('Access-Control-Allow-Methods'), 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
 });
 
 await itAsync('Worker root GET returns 200 with rootFolderId', async () => {
@@ -150,6 +150,46 @@ await itAsync('Streaming endpoint returns 200 with Cache-Control and Content-Typ
     assert.strictEqual(res.headers.get('Access-Control-Allow-Origin'), '*');
     const text = await res.text();
     assert.strictEqual(text, 'Mock file binary content');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+await itAsync('Streaming endpoint handles HTTP HEAD method with 200/headers and empty body', async () => {
+  const mockEnv = {
+    GOOGLE_CLIENT_ID: 'test_client',
+    GOOGLE_CLIENT_SECRET: 'test_secret',
+    GOOGLE_REFRESH_TOKEN: 'test_refresh'
+  };
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    const urlStr = String(url);
+    if (urlStr.includes('oauth2.googleapis.com/token')) {
+      return new Response(JSON.stringify({ access_token: 'mock_token_123', expires_in: 3600 }), { status: 200 });
+    }
+    if (urlStr.includes('googleapis.com/drive/v3/files/file_abc?alt=media')) {
+      return new Response('Mock file binary content', {
+        status: 200,
+        headers: {
+          'Content-Type': 'image/jpeg',
+          'Content-Length': '24'
+        }
+      });
+    }
+    return originalFetch(url, opts);
+  };
+
+  try {
+    const req = new Request('http://localhost/api/drive/file/file_abc', { method: 'HEAD' });
+    const res = await worker.fetch(req, mockEnv);
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.headers.get('Content-Type'), 'image/jpeg');
+    assert.strictEqual(res.headers.get('Accept-Ranges'), 'bytes');
+    assert.strictEqual(res.headers.get('Cache-Control'), 'public, max-age=86400, stale-while-revalidate=604800');
+    assert.strictEqual(res.headers.get('Content-Length'), '24');
+    const text = await res.text();
+    assert.strictEqual(text, '', 'HEAD response body must be empty');
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -355,6 +395,49 @@ await itAsync('Thumbnail endpoint falls back to media stream when thumbnailLink 
     assert.strictEqual(res.headers.get('Cache-Control'), 'public, max-age=604800, stale-while-revalidate=86400');
     const text = await res.text();
     assert.strictEqual(text, 'Mock fallback media binary');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+await itAsync('Thumbnail endpoint handles HTTP HEAD method with 200/headers and empty body', async () => {
+  const mockEnv = {
+    GOOGLE_CLIENT_ID: 'test_client',
+    GOOGLE_CLIENT_SECRET: 'test_secret',
+    GOOGLE_REFRESH_TOKEN: 'test_refresh'
+  };
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    const urlStr = String(url);
+    if (urlStr.includes('oauth2.googleapis.com/token')) {
+      return new Response(JSON.stringify({ access_token: 'token_mock', expires_in: 3600 }), { status: 200 });
+    }
+    if (urlStr.includes('googleapis.com/drive/v3/files/thumb_head_123?fields=')) {
+      return new Response(JSON.stringify({
+        id: 'thumb_head_123',
+        mimeType: 'image/jpeg',
+        thumbnailLink: 'https://lh3.googleusercontent.com/drive-thumb=s220'
+      }), { status: 200 });
+    }
+    if (urlStr.includes('https://lh3.googleusercontent.com/drive-thumb')) {
+      return new Response('Mock thumbnail content', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg', 'Content-Length': '22' }
+      });
+    }
+    return originalFetch(url, opts);
+  };
+
+  try {
+    const req = new Request('http://localhost/api/drive/thumbnail/thumb_head_123?sz=s800', { method: 'HEAD' });
+    const res = await worker.fetch(req, mockEnv);
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.headers.get('Content-Type'), 'image/jpeg');
+    assert.strictEqual(res.headers.get('Cache-Control'), 'public, max-age=604800, stale-while-revalidate=86400');
+    assert.strictEqual(res.headers.get('Content-Length'), '22');
+    const text = await res.text();
+    assert.strictEqual(text, '', 'HEAD response body must be empty');
   } finally {
     globalThis.fetch = originalFetch;
   }
