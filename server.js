@@ -3,12 +3,11 @@ import { exec } from 'child_process';
 import crypto from 'crypto';
 import { uploadToDrive, shareRootWithGoogleGroup } from './services/googleDriveService.js';
 
-const PORT = process.env.PORT || 3001;
-const GMAIL_USER = process.env.VITE_GMAIL_USER || 'sunsetmyfav@gmail.com';
-const GMAIL_APP_PASS = process.env.VITE_GMAIL_APP_PASSWORD || 'jpwraniqiztggrip';
+const GMAIL_USER = process.env.VITE_GMAIL_USER || process.env.GMAIL_USER || '';
+const GMAIL_APP_PASS = process.env.VITE_GMAIL_APP_PASSWORD || process.env.GMAIL_APP_PASSWORD || '';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://lwovriijxuiwwffytvgn.supabase.co';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3b3ZyaWlqeHVpd3dmZnl0dmduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxODMzOTAsImV4cCI6MjEwMTc1OTM5MH0.F1lRxBTxiicVRrL8Irp0cAfadxD5cXKQKMTx2kc97cY';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 // In-Memory OTP Store: Map<contactKey, { otp, expiresAt, attempts, fullName, role, email, phone }>
 const otpStore = new Map();
