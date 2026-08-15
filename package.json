@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "wrangler dev"
+    "dev": "wrangler dev",
+    "test": "node tests/drive_streaming.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

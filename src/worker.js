@@ -2,15 +2,30 @@
  * Booking System Backend Worker (Cloudflare Worker)
  * Handles:
  * 1. Server-Side Google Drive API Uploads with Auto-Refreshing OAuth 2.0 User Tokens
- * 2. Server-Side OTP Generation & Verification
- * 3. Direct Gmail SMTP TLS Email Dispatch over TCP Sockets
+ * 2. High-Performance Resilient File Streaming & Byte-Range Proxy (GET /api/drive/file/:fileId)
+ * 3. Fast Thumbnail Streaming Proxy with Dynamic Sizing (GET /api/drive/thumbnail/:fileId)
+ * 4. Structured Multi-Tier Folder Hierarchy Resolution with In-Memory Caching
+ * 5. Server-Side OTP Generation & Verification
+ * 6. Direct Gmail SMTP TLS Email Dispatch over TCP Sockets
  */
-import { connect } from 'cloudflare:sockets';
+// cloudflare:sockets is dynamically loaded inside sendSmtpEmail for Cloudflare runtime
 
+const DEFAULT_ROOT_FOLDER_ID = '1nXSUrLoiR_SUV9Ethl5AqP6M_Xfjwl6g';
 const otpStore = new Map();
 const folderCache = new Map();
 let cachedDriveToken = null;
 let driveTokenExpiresAt = 0;
+
+/**
+ * Universal Permissive CORS Headers
+ */
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Range, X-Requested-With, X-File-Name, X-File-Mime, X-Folder-Type, X-User-Email, X-Category, X-Sub-Category, X-Entity-Id, X-Period, X-Folder-Path, x-file-name, x-file-mime, x-folder-type, x-user-email, x-category, x-sub-category, x-entity-id, x-period, x-folder-path, *',
+  'Access-Control-Expose-Headers': 'Content-Range, Accept-Ranges, Content-Length, Content-Type',
+  'Access-Control-Max-Age': '86400',
+};
 
 function normalizeContact(contact) {
   if (!contact) return '';
@@ -28,20 +43,32 @@ function extractFolderId(input) {
   if (match) return match[1];
   const idMatch = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (idMatch) return idMatch[1];
-  return str.replace(/[^a-zA-Z0-9_-]/g, '');
+  return str.replace(/[^a-zA-Z0-9_-]/g, '') || null;
+}
+
+/**
+ * Sanitizes folder names while preserving Unicode Vietnamese characters (e.g. Tiếng Việt).
+ * Replaces filesystem-prohibited and path delimiter characters [/\\?%*:|"<>]/g with underscore.
+ */
+function sanitizeFolderSegment(name, fallback = 'general') {
+  if (!name && name !== 0) return fallback;
+  const str = String(name).trim();
+  if (!str) return fallback;
+  const sanitized = str.replace(/[/\\?%*:|"<>]/g, '_').trim();
+  return sanitized || fallback;
 }
 
 // =========================================================================
-// GOOGLE DRIVE OAUTH 2.0 AUTO-REFRESHING ACCESS TOKEN
+// GOOGLE DRIVE OAUTH 2.0 AUTO-REFRESHING ACCESS TOKEN & RETRY
 // =========================================================================
 
 /**
  * Automatically retrieves or refreshes Google OAuth2 access token
- * Uses OAuth 2.0 user credentials (with unlimited automatic refresh)
+ * Uses OAuth 2.0 user credentials (with automatic refresh)
  */
-async function getGoogleDriveAccessToken(env) {
+async function getGoogleDriveAccessToken(env, forceRefresh = false) {
   const now = Math.floor(Date.now() / 1000);
-  if (cachedDriveToken && driveTokenExpiresAt > now + 60) {
+  if (!forceRefresh && cachedDriveToken && driveTokenExpiresAt > now + 60) {
     return cachedDriveToken;
   }
 
@@ -76,23 +103,47 @@ async function getGoogleDriveAccessToken(env) {
 }
 
 /**
- * Finds or creates a folder inside a parent folder in Google Drive
+ * Performs a fetch to Google Drive API with automatic 401 token refresh retry
  */
-async function findOrCreateFolder(accessToken, folderName, parentId = null) {
-  const cacheKey = `${parentId || 'root'}:${folderName}`;
+async function fetchDriveWithRetry(url, options = {}, env) {
+  let token = await getGoogleDriveAccessToken(env);
+  const headers = new Headers(options.headers || {});
+  headers.set('Authorization', `Bearer ${token}`);
+
+  let res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    console.warn('[Google Drive 401] Access token expired or rejected, refreshing token and retrying once...');
+    cachedDriveToken = null;
+    driveTokenExpiresAt = 0;
+    token = await getGoogleDriveAccessToken(env, true);
+    headers.set('Authorization', `Bearer ${token}`);
+    res = await fetch(url, { ...options, headers });
+  }
+  return res;
+}
+
+// =========================================================================
+// STRUCTURED GOOGLE DRIVE FOLDER HIERARCHY RESOLUTION
+// =========================================================================
+
+/**
+ * Finds or creates a folder inside a parent folder in Google Drive with in-memory caching
+ */
+async function findOrCreateFolder(accessToken, folderName, parentId = null, env = null) {
+  const cleanName = sanitizeFolderSegment(folderName);
+  const cacheKey = `${parentId || 'root'}:${cleanName}`;
   if (folderCache.has(cacheKey)) {
     return folderCache.get(cacheKey);
   }
 
-  let q = `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`;
+  const escapedName = cleanName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  let q = `mimeType='application/vnd.google-apps.folder' and name='${escapedName}' and trashed=false`;
   if (parentId) {
     q += ` and '${parentId}' in parents`;
   }
 
   const listUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name)&spaces=drive`;
-  const listRes = await fetch(listUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  const listRes = await fetchDriveWithRetry(listUrl, {}, env);
 
   if (listRes.ok) {
     const listData = await listRes.json();
@@ -104,22 +155,21 @@ async function findOrCreateFolder(accessToken, folderName, parentId = null) {
   }
 
   // Create new folder
-  const createRes = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
+  const createRes = await fetchDriveWithRetry('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      name: folderName,
+      name: cleanName,
       mimeType: 'application/vnd.google-apps.folder',
       parents: parentId ? [parentId] : []
     })
-  });
+  }, env);
 
   if (!createRes.ok) {
     const errText = await createRes.text();
-    throw new Error(`Failed to create folder ${folderName}: ${errText}`);
+    throw new Error(`Failed to create folder "${cleanName}": ${errText}`);
   }
 
   const createData = await createRes.json();
@@ -129,74 +179,102 @@ async function findOrCreateFolder(accessToken, folderName, parentId = null) {
 }
 
 /**
- * Resolves deeply nested folder paths in Google Drive inside root folder:
- * ['Users', 'bao.h0146824@gmail.com', 'Identification']
- * ['Users', 'bao.h0146824@gmail.com', 'Contracts', 'HD-2026-001', 'Files']
- * ['Users', 'bao.h0146824@gmail.com', 'Payments', '2026-08']
- * ['Properties', 'Penthouse_Sun_Grand_City_p123', 'Images']
+ * Resolves deeply nested folder paths sequentially in Google Drive inside root folder
  */
-async function findOrCreateFolderPath(accessToken, pathSegments, rootId) {
+async function findOrCreateFolderPath(accessToken, pathSegments, rootId, env = null) {
   let currentParentId = rootId;
   for (const segment of pathSegments) {
-    const cleanName = String(segment || 'general').trim().replace(/[/\\?%*:|"<>]/g, '_');
+    const cleanName = sanitizeFolderSegment(segment);
     if (!cleanName) continue;
-    currentParentId = await findOrCreateFolder(accessToken, cleanName, currentParentId);
+    currentParentId = await findOrCreateFolder(accessToken, cleanName, currentParentId, env);
   }
   return currentParentId;
 }
 
 /**
- * Resolves structured folder path in Google Drive
+ * Resolves structured folder path in Google Drive according to system hierarchy:
+ * - Users/{user_identifier}/Identification/
+ * - Users/{user_identifier}/Contracts/{contract_id}/Files/ and .../Images/
+ * - Users/{user_identifier}/Payments/{payment_period}/
+ * - Properties/{property_name}_{property_id}/Images/
  */
-async function resolveTargetFolder(accessToken, { folderPath = null, folderType = 'Images', userEmail = 'general', category = null, subCategory = null, entityId = null, period = null, env }) {
-  const rawRoot = env?.GOOGLE_DRIVE_ROOT_FOLDER_ID || env?.DRIVE_ROOT_FOLDER_ID;
-  let rootId = extractFolderId(rawRoot);
+async function resolveTargetFolder(accessToken, {
+  folderPath = null,
+  folderType = 'Images',
+  userEmail = 'general',
+  category = null,
+  subCategory = null,
+  entityId = null,
+  period = null,
+  env = null
+}) {
+  const rawRoot = env?.GOOGLE_DRIVE_ROOT_FOLDER_ID || env?.DRIVE_ROOT_FOLDER_ID || DEFAULT_ROOT_FOLDER_ID;
+  let rootId = extractFolderId(rawRoot) || DEFAULT_ROOT_FOLDER_ID;
 
-  if (!rootId) {
-    rootId = await findOrCreateFolder(accessToken, 'Booking System Drive', null);
-  }
-
-  // 1. Direct structured path array provided
+  // 1. Direct explicit structured path array provided
   if (Array.isArray(folderPath) && folderPath.length > 0) {
-    return await findOrCreateFolderPath(accessToken, folderPath, rootId);
+    return await findOrCreateFolderPath(accessToken, folderPath, rootId, env);
   }
+
+  const userIdentifier = sanitizeFolderSegment(userEmail || 'general');
 
   // 2. Structured Category logic
-  const cleanUser = (userEmail || 'general').trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
-
   if (category === 'properties') {
-    const propFolder = (entityId || 'General_Property').trim().replace(/[/\\?%*:|"<>]/g, '_');
-    return await findOrCreateFolderPath(accessToken, ['Properties', propFolder, 'Images'], rootId);
+    const propFolder = sanitizeFolderSegment(entityId || 'General_Property');
+    return await findOrCreateFolderPath(accessToken, ['Properties', propFolder, 'Images'], rootId, env);
   }
 
   if (category === 'users') {
     if (subCategory === 'identification') {
-      return await findOrCreateFolderPath(accessToken, ['Users', cleanUser, 'Identification'], rootId);
+      return await findOrCreateFolderPath(accessToken, ['Users', userIdentifier, 'Identification'], rootId, env);
     }
     if (subCategory === 'contracts') {
-      const contractSub = (entityId || 'general').trim().replace(/[/\\?%*:|"<>]/g, '_');
-      const innerFolder = folderType === 'Images' ? 'Images' : 'Files';
-      return await findOrCreateFolderPath(accessToken, ['Users', cleanUser, 'Contracts', contractSub, innerFolder], rootId);
+      const contractSub = sanitizeFolderSegment(entityId || 'general');
+      const innerFolder = folderType === 'Files' ? 'Files' : 'Images';
+      return await findOrCreateFolderPath(accessToken, ['Users', userIdentifier, 'Contracts', contractSub, innerFolder], rootId, env);
     }
     if (subCategory === 'payments') {
-      const payPeriod = (period || 'Kỳ thanh toán').trim().replace(/[/\\?%*:|"<>]/g, '_');
-      return await findOrCreateFolderPath(accessToken, ['Users', cleanUser, 'Payments', payPeriod], rootId);
+      const payPeriod = sanitizeFolderSegment(period || 'General_Period');
+      return await findOrCreateFolderPath(accessToken, ['Users', userIdentifier, 'Payments', payPeriod], rootId, env);
     }
-    return await findOrCreateFolderPath(accessToken, ['Users', cleanUser, folderType === 'Files' ? 'Files' : 'Images'], rootId);
+    const innerFolder = folderType === 'Files' ? 'Files' : 'Images';
+    return await findOrCreateFolderPath(accessToken, ['Users', userIdentifier, innerFolder], rootId, env);
   }
 
   // Fallback: Legacy Files/Images organization
-  const subFolderId = await findOrCreateFolder(accessToken, folderType === 'Files' ? 'Files' : 'Images', rootId);
-  const userFolderId = await findOrCreateFolder(accessToken, cleanUser, subFolderId);
+  const subFolderId = await findOrCreateFolder(accessToken, folderType === 'Files' ? 'Files' : 'Images', rootId, env);
+  const userFolderId = await findOrCreateFolder(accessToken, userIdentifier, subFolderId, env);
   return userFolderId;
 }
 
 /**
  * Upload raw bytes to Google Drive via multipart upload
  */
-async function uploadToGoogleDrive({ buffer, filename, mimeType, folderPath = null, folderType = 'Images', userEmail = 'general', category = null, subCategory = null, entityId = null, period = null, requestOrigin = '', env }) {
+async function uploadToGoogleDrive({
+  buffer,
+  filename,
+  mimeType,
+  folderPath = null,
+  folderType = 'Images',
+  userEmail = 'general',
+  category = null,
+  subCategory = null,
+  entityId = null,
+  period = null,
+  requestOrigin = '',
+  env
+}) {
   const accessToken = await getGoogleDriveAccessToken(env);
-  const targetFolderId = await resolveTargetFolder(accessToken, { folderPath, folderType, userEmail, category, subCategory, entityId, period, env });
+  const targetFolderId = await resolveTargetFolder(accessToken, {
+    folderPath,
+    folderType,
+    userEmail,
+    category,
+    subCategory,
+    entityId,
+    period,
+    env
+  });
 
   const boundary = `-------314159265358979323846_${Date.now()}`;
   const delimiter = `\r\n--${boundary}\r\n`;
@@ -221,14 +299,13 @@ async function uploadToGoogleDrive({ buffer, filename, mimeType, folderPath = nu
   fullBody.set(part3, part1.length + part2.length);
 
   const uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink,webContentLink,thumbnailLink';
-  const uploadRes = await fetch(uploadUrl, {
+  const uploadRes = await fetchDriveWithRetry(uploadUrl, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       'Content-Type': `multipart/related; boundary=${boundary}`
     },
     body: fullBody
-  });
+  }, env);
 
   if (!uploadRes.ok) {
     const errText = await uploadRes.text();
@@ -240,23 +317,23 @@ async function uploadToGoogleDrive({ buffer, filename, mimeType, folderPath = nu
 
   // Make file readable via link
   try {
-    await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions?supportsAllDrives=true`, {
+    await fetchDriveWithRetry(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions?supportsAllDrives=true`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         role: 'reader',
         type: 'anyone'
       })
-    });
+    }, env);
   } catch (permErr) {
     console.warn('[GoogleDrive Permission Warning]', permErr.message);
   }
 
   const originBase = requestOrigin || 'https://booking-system-be.iluvsunset.workers.dev';
   const proxyUrl = `${originBase}/api/drive/file/${fileId}`;
+  const thumbnailProxyUrl = `${originBase}/api/drive/thumbnail/${fileId}`;
   const webViewLink = fileData.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
 
   return {
@@ -265,10 +342,11 @@ async function uploadToGoogleDrive({ buffer, filename, mimeType, folderPath = nu
     name: fileData.name,
     url: proxyUrl,
     proxyUrl,
+    thumbnailUrl: thumbnailProxyUrl,
     directLink: `https://lh3.googleusercontent.com/d/${fileId}`,
     webViewLink,
     webContentLink: fileData.webContentLink || proxyUrl,
-    thumbnailLink: fileData.thumbnailLink || proxyUrl
+    thumbnailLink: fileData.thumbnailLink || thumbnailProxyUrl
   };
 }
 
@@ -281,7 +359,15 @@ async function sendSmtpEmail({ user, pass, to, subject, htmlContent }) {
     throw new Error('Chưa cấu hình tài khoản Gmail gửi tin (GMAIL_USER / GMAIL_APP_PASSWORD).');
   }
 
-  const socket = connect({ hostname: 'smtp.gmail.com', port: 465 }, { secureTransport: 'on' });
+  let connectFn;
+  try {
+    const socketsMod = await import('cloudflare:sockets');
+    connectFn = socketsMod.connect;
+  } catch (modErr) {
+    throw new Error('cloudflare:sockets is only available in Cloudflare Workers runtime.');
+  }
+
+  const socket = connectFn({ hostname: 'smtp.gmail.com', port: 465 }, { secureTransport: 'on' });
   const writer = socket.writable.getWriter();
   const reader = socket.readable.getReader();
   const encoder = new TextEncoder();
@@ -423,57 +509,189 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Universal Permissive CORS Headers
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-File-Name, X-File-Mime, X-Folder-Type, X-User-Email, x-file-name, x-file-mime, x-folder-type, x-user-email, *',
-      'Access-Control-Max-Age': '86400',
-    };
-
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     // =========================================================================
-    // API ROUTE: /api/drive/file/:fileId or /api/drive/view/:fileId (Streaming Proxy)
+    // API ROUTE: GET /api/drive/file/:fileId or /api/drive/view/:fileId (Streaming Proxy)
+    // Supports HTTP Range header (206 Partial Content), Content-Type, Content-Length,
+    // Cache-Control, and automatic 401 token refresh retry.
     // =========================================================================
     if (request.method === 'GET' && (url.pathname.startsWith('/api/drive/file/') || url.pathname.startsWith('/api/drive/view/'))) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      const fileId = parts[parts.length - 1];
+
+      if (!fileId || fileId === 'file' || fileId === 'view') {
+        return new Response(JSON.stringify({ success: false, error: 'Missing or invalid file ID' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       try {
-        const fileId = url.pathname.split('/').pop();
-        if (!fileId) {
-          return new Response('Missing file ID', { status: 400, headers: corsHeaders });
+        const rangeHeader = request.headers.get('Range') || request.headers.get('range');
+        const driveHeaders = {};
+        if (rangeHeader) {
+          driveHeaders['Range'] = rangeHeader;
         }
 
-        const accessToken = await getGoogleDriveAccessToken(env);
-        const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
+        const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
+        const driveRes = await fetchDriveWithRetry(driveUrl, { headers: driveHeaders }, env);
 
-        if (!driveRes.ok) {
-          return new Response(`Google Drive file error: ${driveRes.status}`, { status: driveRes.status, headers: corsHeaders });
+        if (driveRes.status === 404) {
+          return new Response(JSON.stringify({ success: false, error: 'File not found on Google Drive', fileId }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (driveRes.status === 403) {
+          return new Response(JSON.stringify({ success: false, error: 'Google Drive access denied or permission restricted', fileId }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (!driveRes.ok && driveRes.status !== 206) {
+          return new Response(JSON.stringify({ success: false, error: `Google Drive file streaming error: ${driveRes.status}`, fileId }), {
+            status: driveRes.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
         }
 
         const contentType = driveRes.headers.get('content-type') || 'application/octet-stream';
         const responseHeaders = new Headers({
           ...corsHeaders,
           'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=31536000, immutable',
-          'Access-Control-Allow-Origin': '*'
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
         });
 
+        if (driveRes.headers.get('content-range')) {
+          responseHeaders.set('Content-Range', driveRes.headers.get('content-range'));
+        }
+        if (driveRes.headers.get('content-length')) {
+          responseHeaders.set('Content-Length', driveRes.headers.get('content-length'));
+        }
+
         return new Response(driveRes.body, {
-          status: 200,
+          status: driveRes.status === 206 ? 206 : 200,
           headers: responseHeaders
         });
       } catch (proxyErr) {
-        console.error('[Drive Proxy Error]', proxyErr);
-        return new Response(`Proxy error: ${proxyErr.message}`, { status: 500, headers: corsHeaders });
+        console.error('[Drive Streaming Proxy Error]', proxyErr);
+        return new Response(JSON.stringify({ success: false, error: proxyErr.message || 'Internal Drive proxy error', fileId }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
     }
 
     // =========================================================================
-    // API ROUTE: /api/upload (Google Drive File Streaming)
+    // API ROUTE: GET /api/drive/thumbnail/:fileId (Thumbnail Proxy)
+    // Supports query param ?sz= (default s400, e.g. sz=s400, sz=s800, sz=w500-h500),
+    // fetches thumbnailLink or falls back to direct media, with aggressive caching.
+    // =========================================================================
+    if (request.method === 'GET' && url.pathname.startsWith('/api/drive/thumbnail/')) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      const fileId = parts[parts.length - 1];
+      const sz = url.searchParams.get('sz') || 's400';
+
+      if (!fileId || fileId === 'thumbnail') {
+        return new Response(JSON.stringify({ success: false, error: 'Missing or invalid file ID' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      try {
+        const metaUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,thumbnailLink,hasThumbnail&supportsAllDrives=true`;
+        const metaRes = await fetchDriveWithRetry(metaUrl, {}, env);
+
+        if (!metaRes.ok) {
+          if (metaRes.status === 404) {
+            return new Response(JSON.stringify({ success: false, error: 'File not found on Google Drive', fileId }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          if (metaRes.status === 403) {
+            return new Response(JSON.stringify({ success: false, error: 'Google Drive access denied', fileId }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          return new Response(JSON.stringify({ success: false, error: `Google Drive thumbnail metadata error: ${metaRes.status}`, fileId }), {
+            status: metaRes.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const metaData = await metaRes.json();
+
+        // 1. If Drive provides a thumbnailLink, adjust sizing parameter and proxy image
+        if (metaData.thumbnailLink) {
+          let thumbUrl = metaData.thumbnailLink;
+          if (thumbUrl.includes('=')) {
+            thumbUrl = thumbUrl.replace(/=[^=]*$/, `=${sz}`);
+          } else {
+            thumbUrl = `${thumbUrl}=${sz}`;
+          }
+
+          const thumbRes = await fetch(thumbUrl);
+          if (thumbRes.ok) {
+            const contentType = thumbRes.headers.get('content-type') || 'image/jpeg';
+            const responseHeaders = new Headers({
+              ...corsHeaders,
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400'
+            });
+            if (thumbRes.headers.get('content-length')) {
+              responseHeaders.set('Content-Length', thumbRes.headers.get('content-length'));
+            }
+            return new Response(thumbRes.body, {
+              status: 200,
+              headers: responseHeaders
+            });
+          }
+        }
+
+        // 2. Fallback: Stream direct file media
+        const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
+        const fileRes = await fetchDriveWithRetry(driveUrl, {}, env);
+
+        if (fileRes.ok) {
+          const contentType = fileRes.headers.get('content-type') || metaData.mimeType || 'image/jpeg';
+          const responseHeaders = new Headers({
+            ...corsHeaders,
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400'
+          });
+          if (fileRes.headers.get('content-length')) {
+            responseHeaders.set('Content-Length', fileRes.headers.get('content-length'));
+          }
+          return new Response(fileRes.body, {
+            status: 200,
+            headers: responseHeaders
+          });
+        }
+
+        return new Response(JSON.stringify({ success: false, error: `Failed to load thumbnail or file media (${fileRes.status})`, fileId }), {
+          status: fileRes.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (thumbErr) {
+        console.error('[Drive Thumbnail Proxy Error]', thumbErr);
+        return new Response(JSON.stringify({ success: false, error: thumbErr.message || 'Internal thumbnail proxy error', fileId }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // =========================================================================
+    // API ROUTE: /api/upload (Google Drive File Streaming Upload)
     // =========================================================================
     if (request.method === 'POST' && (url.pathname === '/api/upload' || url.pathname === '/upload')) {
       try {
@@ -494,8 +712,10 @@ export default {
 
         const category = request.headers.get('x-category') || request.headers.get('X-Category') || null;
         const subCategory = request.headers.get('x-sub-category') || request.headers.get('X-Sub-Category') || null;
-        const entityId = request.headers.get('x-entity-id') || request.headers.get('X-Entity-Id') ? decodeURIComponent(request.headers.get('x-entity-id') || request.headers.get('X-Entity-Id')) : null;
-        const period = request.headers.get('x-period') || request.headers.get('X-Period') ? decodeURIComponent(request.headers.get('x-period') || request.headers.get('X-Period')) : null;
+        const rawEntityId = request.headers.get('x-entity-id') || request.headers.get('X-Entity-Id');
+        const entityId = rawEntityId ? decodeURIComponent(rawEntityId) : null;
+        const rawPeriod = request.headers.get('x-period') || request.headers.get('X-Period');
+        const period = rawPeriod ? decodeURIComponent(rawPeriod) : null;
 
         let folderPath = null;
         const rawFolderPath = request.headers.get('x-folder-path') || request.headers.get('X-Folder-Path');
@@ -689,7 +909,18 @@ export default {
       }
     }
 
-    return new Response(JSON.stringify({ status: 'Booking System BE Worker Running' }), {
+    return new Response(JSON.stringify({
+      status: 'Booking System BE Worker Running',
+      rootFolderId: DEFAULT_ROOT_FOLDER_ID,
+      endpoints: [
+        'GET /api/drive/file/:fileId',
+        'GET /api/drive/thumbnail/:fileId',
+        'POST /api/upload',
+        'POST /api/request-otp',
+        'POST /api/verify-otp',
+        'POST /api/send-email'
+      ]
+    }), {
       status: 200,
       headers: { ...corsHeaders, 'content-type': 'application/json' }
     });

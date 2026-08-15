@@ -1,8 +1,15 @@
 import http from 'http';
 import { exec } from 'child_process';
 import crypto from 'crypto';
-import { uploadToDrive, shareRootWithGoogleGroup } from './services/googleDriveService.js';
+import {
+  DEFAULT_ROOT_FOLDER_ID,
+  uploadToDrive,
+  getFileStream,
+  getThumbnailStream,
+  shareRootWithGoogleGroup
+} from './services/googleDriveService.js';
 
+const PORT = process.env.PORT || 3001;
 const GMAIL_USER = process.env.VITE_GMAIL_USER || process.env.GMAIL_USER || '';
 const GMAIL_APP_PASS = process.env.VITE_GMAIL_APP_PASSWORD || process.env.GMAIL_APP_PASSWORD || '';
 
@@ -93,7 +100,7 @@ async function findUserRecord(contact) {
   }
 
   // Whitelist fallback for standard system accounts
-  const defaultContacts = ['0559015715', '0559015714', '0912345678', '0987654321', 'admin@bookingsystem.vn', 'sunsetmyfav@gmail.com', 'bao.h0146824@gmail.com'];
+  const defaultContacts = ['0559015714', '0559015715', '0912345678', '0987654321', 'admin@bookingsystem.vn', 'sunsetmyfav@gmail.com', 'bao.h0146824@gmail.com'];
   if (defaultContacts.some(c => c.toLowerCase() === clean || c.replace(/[^0-9]/g, '') === cleanDigits)) {
     return {
       exists: true,
@@ -170,11 +177,13 @@ function dispatchEmail({ to, subject, html }) {
   });
 }
 
-const server = http.createServer((req, res) => {
-  // CORS Headers
+const server = http.createServer(async (req, res) => {
+  // Universal Permissive CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-File-Name, X-File-Mime, X-Folder-Type, X-User-Email');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Range, X-Requested-With, X-File-Name, X-File-Mime, X-Folder-Type, X-User-Email, X-Category, X-Sub-Category, X-Entity-Id, X-Period, X-Folder-Path, x-file-name, x-file-mime, x-folder-type, x-user-email, x-category, x-sub-category, x-entity-id, x-period, x-folder-path, *');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length, Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -185,28 +194,132 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost:3001'}`);
 
   // =========================================================================
-  // MULTIPART FILE UPLOAD: /api/upload
+  // 1. GET /api/drive/file/:fileId or /api/drive/view/:fileId (File Streaming Proxy)
+  // =========================================================================
+  if (req.method === 'GET' && (url.pathname.startsWith('/api/drive/file/') || url.pathname.startsWith('/api/drive/view/'))) {
+    const parts = url.pathname.split('/').filter(Boolean);
+    const fileId = parts[parts.length - 1];
+
+    if (!fileId || fileId === 'file' || fileId === 'view') {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: 'Missing or invalid file ID' }));
+      return;
+    }
+
+    try {
+      const range = req.headers['range'] || null;
+      const fileData = await getFileStream(fileId, range);
+
+      const headers = {
+        'Content-Type': fileData.contentType || 'application/octet-stream',
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
+      };
+
+      if (fileData.contentRange) {
+        headers['Content-Range'] = fileData.contentRange;
+      }
+      if (fileData.contentLength) {
+        headers['Content-Length'] = fileData.contentLength;
+      }
+
+      res.writeHead(fileData.status || (range ? 206 : 200), headers);
+      fileData.stream.pipe(res);
+    } catch (err) {
+      console.error('[Drive File Streaming Error]', err.message);
+      const status = err.code === 404 || err.status === 404 ? 404 : 500;
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message || 'Error streaming file from Google Drive', fileId }));
+    }
+    return;
+  }
+
+  // =========================================================================
+  // 2. GET /api/drive/thumbnail/:fileId (Thumbnail Proxy)
+  // =========================================================================
+  if (req.method === 'GET' && url.pathname.startsWith('/api/drive/thumbnail/')) {
+    const parts = url.pathname.split('/').filter(Boolean);
+    const fileId = parts[parts.length - 1];
+    const sz = url.searchParams.get('sz') || 's400';
+
+    if (!fileId || fileId === 'thumbnail') {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: 'Missing or invalid file ID' }));
+      return;
+    }
+
+    try {
+      const thumbData = await getThumbnailStream(fileId, sz);
+      const headers = {
+        'Content-Type': thumbData.contentType || 'image/jpeg',
+        'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400'
+      };
+
+      if (thumbData.contentLength) {
+        headers['Content-Length'] = thumbData.contentLength;
+      }
+
+      res.writeHead(200, headers);
+      thumbData.stream.pipe(res);
+    } catch (err) {
+      console.error('[Drive Thumbnail Proxy Error]', err.message);
+      const status = err.code === 404 || err.status === 404 ? 404 : 500;
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message || 'Error loading thumbnail from Google Drive', fileId }));
+    }
+    return;
+  }
+
+  // =========================================================================
+  // 3. MULTIPART FILE UPLOAD: /api/upload
   // =========================================================================
   if (req.method === 'POST' && (url.pathname === '/api/upload' || url.pathname === '/upload')) {
-    const contentType = req.headers['content-type'] || '';
     const chunks = [];
     req.on('data', chunk => chunks.push(chunk));
     req.on('end', async () => {
       try {
         const rawBody = Buffer.concat(chunks);
+        if (!rawBody || rawBody.length === 0) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Không tìm thấy dữ liệu file trong request payload.' }));
+          return;
+        }
 
-        // Parse metadata from headers (sent as x-file-* headers)
-        const filename = decodeURIComponent(req.headers['x-file-name'] || `upload_${Date.now()}`);
+        // Parse metadata from headers
+        const rawFilename = req.headers['x-file-name'];
+        const filename = rawFilename ? decodeURIComponent(rawFilename) : `upload_${Date.now()}`;
         const mimeType = req.headers['x-file-mime'] || req.headers['content-type'] || 'application/octet-stream';
-        const folderType = req.headers['x-folder-type'] || 'Images'; // 'Images' or 'Files'
-        const userEmail = decodeURIComponent(req.headers['x-user-email'] || 'general');
+        const folderType = req.headers['x-folder-type'] || 'Images';
+        const rawEmail = req.headers['x-user-email'];
+        const userEmail = rawEmail ? decodeURIComponent(rawEmail) : 'general';
+
+        const category = req.headers['x-category'] || null;
+        const subCategory = req.headers['x-sub-category'] || null;
+        const rawEntityId = req.headers['x-entity-id'];
+        const entityId = rawEntityId ? decodeURIComponent(rawEntityId) : null;
+        const rawPeriod = req.headers['x-period'];
+        const period = rawPeriod ? decodeURIComponent(rawPeriod) : null;
+
+        let folderPath = null;
+        const rawFolderPath = req.headers['x-folder-path'];
+        if (rawFolderPath) {
+          try {
+            folderPath = JSON.parse(decodeURIComponent(rawFolderPath));
+          } catch {}
+        }
 
         const result = await uploadToDrive({
           buffer: rawBody,
           filename,
           mimeType,
+          folderPath,
           folderType,
-          userEmail
+          userEmail,
+          category,
+          subCategory,
+          entityId,
+          period,
+          requestOrigin: `http://${req.headers.host || 'localhost:3001'}`
         });
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -238,7 +351,7 @@ const server = http.createServer((req, res) => {
       }
 
       // =========================================================================
-      // 1. ENDPOINT: /api/request-otp (Generates OTP on server & emails it)
+      // 4. ENDPOINT: /api/request-otp (Generates OTP on server & emails it)
       // =========================================================================
       if (url.pathname === '/api/request-otp') {
         const contact = parsed.contact || parsed.to || parsed.email || parsed.phone;
@@ -293,7 +406,7 @@ const server = http.createServer((req, res) => {
       }
 
       // =========================================================================
-      // 2. ENDPOINT: /api/verify-otp (Validates OTP strictly on server)
+      // 5. ENDPOINT: /api/verify-otp (Validates OTP strictly on server)
       // =========================================================================
       if (url.pathname === '/api/verify-otp') {
         const contact = parsed.contact || parsed.to || parsed.email || parsed.phone;
@@ -362,7 +475,7 @@ const server = http.createServer((req, res) => {
       }
 
       // =========================================================================
-      // 3. ENDPOINT: /api/send-email (General Purpose Email Dispatch)
+      // 6. ENDPOINT: /api/send-email (General Purpose Email Dispatch)
       // =========================================================================
       if (url.pathname === '/api/send-email' || url.pathname === '/send-email') {
         const recipient = parsed.to || parsed.email || parsed.recipient || 'bao.h0146824@gmail.com';
@@ -386,7 +499,7 @@ const server = http.createServer((req, res) => {
       }
 
       // =========================================================================
-      // 4. ENDPOINT: /api/drive/setup (Share root folder with Google Group)
+      // 7. ENDPOINT: /api/drive/setup (Share root folder with Google Group)
       // =========================================================================
       if (url.pathname === '/api/drive/setup') {
         const groupEmail = parsed.groupEmail;
@@ -413,14 +526,22 @@ const server = http.createServer((req, res) => {
   } else {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
-      status: 'Booking System BE Gmail SMTP & Server OTP Auth Running',
+      status: 'Booking System BE Server Running',
       port: PORT,
-      endpoints: ['/api/request-otp', '/api/verify-otp', '/api/send-email']
+      rootFolderId: DEFAULT_ROOT_FOLDER_ID,
+      endpoints: [
+        'GET /api/drive/file/:fileId',
+        'GET /api/drive/thumbnail/:fileId',
+        'POST /api/upload',
+        'POST /api/request-otp',
+        'POST /api/verify-otp',
+        'POST /api/send-email',
+        'POST /api/drive/setup'
+      ]
     }));
   }
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Booking System BE running with Secure Server-Side OTP Auth on http://localhost:${PORT}`);
+  console.log(`🚀 Booking System BE running on http://localhost:${PORT}`);
 });
-
