@@ -18,6 +18,20 @@ function normalizeContact(contact) {
   return clean.includes('@') ? clean : clean.replace(/[^0-9]/g, '');
 }
 
+/**
+ * Extracts raw Google Drive folder ID from full URLs or raw strings
+ * Handles: https://drive.google.com/drive/folders/1nXSUrLoiR_SUV9Ethl5AqP6M_Xfjwl6g...
+ */
+function extractFolderId(input) {
+  if (!input) return null;
+  const str = String(input).trim();
+  const match = str.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (match) return match[1];
+  const idMatch = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idMatch) return idMatch[1];
+  return str.replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
 // =========================================================================
 // NATIVE WEB CRYPTO GOOGLE SERVICE ACCOUNT AUTHENTICATION (RS256)
 // =========================================================================
@@ -188,7 +202,8 @@ async function findOrCreateFolder(accessToken, folderName, parentId = null) {
 async function resolveTargetFolder(accessToken, folderType = 'Images', userEmail = 'general', env) {
   const cleanEmail = (userEmail || 'general').trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
 
-  let rootId = env?.GOOGLE_DRIVE_ROOT_FOLDER_ID || env?.DRIVE_ROOT_FOLDER_ID;
+  const rawRoot = env?.GOOGLE_DRIVE_ROOT_FOLDER_ID || env?.DRIVE_ROOT_FOLDER_ID;
+  let rootId = extractFolderId(rawRoot);
 
   if (!rootId) {
     // Check if there is an existing folder shared with this Service Account from a human Google account
