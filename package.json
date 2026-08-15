@@ -1,0 +1,16 @@
+{
+  "name": "booking-system-be",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "googleapis": "^174.0.1"
+  },
+  "devDependencies": {
+    "wrangler": "^3.109.2"
+  }
+}
