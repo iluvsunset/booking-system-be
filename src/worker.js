@@ -33,6 +33,41 @@ function normalizeContact(contact) {
   return clean.includes('@') ? clean : clean.replace(/[^0-9]/g, '');
 }
 
+async function hmacSha256(message, secret) {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret || 'booking_system_secret_otp_2026');
+  const msgData = encoder.encode(message);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function generateOtpToken(contact, otp, expiresAt, secret) {
+  const payload = `${contact}:${otp}:${expiresAt}`;
+  const sig = await hmacSha256(payload, secret);
+  return btoa(JSON.stringify({ c: contact, e: expiresAt, s: sig }));
+}
+
+async function verifyOtpToken(contact, enteredOtp, tokenStr, secret) {
+  try {
+    const raw = atob(tokenStr);
+    const { c, e, s } = JSON.parse(raw);
+    if (c !== contact || Date.now() > e) return false;
+    const expectedSig = await hmacSha256(`${c}:${enteredOtp}:${e}`, secret);
+    return s === expectedSig;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Extracts raw Google Drive folder ID from full URLs or raw strings
  */
@@ -799,6 +834,8 @@ export default {
         // Generate 6-digit random OTP
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = Date.now() + 5 * 60 * 1000;
+        const secret = env?.JWT_SECRET || env?.GMAIL_APP_PASSWORD || 'booking_system_secret_otp_2026';
+        const otpToken = await generateOtpToken(normalized, otpCode, expiresAt, secret);
 
         otpStore.set(normalized, {
           otp: otpCode,
@@ -827,6 +864,7 @@ export default {
 
         return new Response(JSON.stringify({
           success: true,
+          otpToken,
           message: targetEmail ? `Mã OTP đã được gửi đến email ${targetEmail}` : 'Mã OTP đã được khởi tạo thành công.',
           contact: normalized
         }), {
@@ -849,13 +887,16 @@ export default {
         const body = await request.json().catch(() => ({}));
         const contact = body.contact || body.email || body.phone;
         const enteredOtp = String(body.otp || '').trim();
+        const otpToken = body.otpToken || body.token || '';
         const normalized = normalizeContact(contact);
+        const secret = env?.JWT_SECRET || env?.GMAIL_APP_PASSWORD || 'booking_system_secret_otp_2026';
 
         const record = otpStore.get(normalized);
         const isMasterOtp = enteredOtp === '123456';
         const isRecordValid = record && record.otp === enteredOtp && Date.now() <= record.expiresAt;
+        const isTokenValid = otpToken ? await verifyOtpToken(normalized, enteredOtp, otpToken, secret) : false;
 
-        if (!isMasterOtp && !isRecordValid) {
+        if (!isMasterOtp && !isRecordValid && !isTokenValid) {
           return new Response(JSON.stringify({ success: false, verified: false, error: 'Mã OTP không đúng hoặc đã hết hạn.' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
