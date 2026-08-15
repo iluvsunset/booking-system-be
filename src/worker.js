@@ -129,12 +129,26 @@ async function findOrCreateFolder(accessToken, folderName, parentId = null) {
 }
 
 /**
- * Resolves structured folder path in Google Drive:
- * "Booking System Drive" (or Root Shared Folder) -> "Images" | "Files" -> "{user_email}"
+ * Resolves deeply nested folder paths in Google Drive inside root folder:
+ * ['Users', 'bao.h0146824@gmail.com', 'Identification']
+ * ['Users', 'bao.h0146824@gmail.com', 'Contracts', 'HD-2026-001', 'Files']
+ * ['Users', 'bao.h0146824@gmail.com', 'Payments', '2026-08']
+ * ['Properties', 'Penthouse_Sun_Grand_City_p123', 'Images']
  */
-async function resolveTargetFolder(accessToken, folderType = 'Images', userEmail = 'general', env) {
-  const cleanEmail = (userEmail || 'general').trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
+async function findOrCreateFolderPath(accessToken, pathSegments, rootId) {
+  let currentParentId = rootId;
+  for (const segment of pathSegments) {
+    const cleanName = String(segment || 'general').trim().replace(/[/\\?%*:|"<>]/g, '_');
+    if (!cleanName) continue;
+    currentParentId = await findOrCreateFolder(accessToken, cleanName, currentParentId);
+  }
+  return currentParentId;
+}
 
+/**
+ * Resolves structured folder path in Google Drive
+ */
+async function resolveTargetFolder(accessToken, { folderPath = null, folderType = 'Images', userEmail = 'general', category = null, subCategory = null, entityId = null, period = null, env }) {
   const rawRoot = env?.GOOGLE_DRIVE_ROOT_FOLDER_ID || env?.DRIVE_ROOT_FOLDER_ID;
   let rootId = extractFolderId(rawRoot);
 
@@ -142,17 +156,47 @@ async function resolveTargetFolder(accessToken, folderType = 'Images', userEmail
     rootId = await findOrCreateFolder(accessToken, 'Booking System Drive', null);
   }
 
+  // 1. Direct structured path array provided
+  if (Array.isArray(folderPath) && folderPath.length > 0) {
+    return await findOrCreateFolderPath(accessToken, folderPath, rootId);
+  }
+
+  // 2. Structured Category logic
+  const cleanUser = (userEmail || 'general').trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
+
+  if (category === 'properties') {
+    const propFolder = (entityId || 'General_Property').trim().replace(/[/\\?%*:|"<>]/g, '_');
+    return await findOrCreateFolderPath(accessToken, ['Properties', propFolder, 'Images'], rootId);
+  }
+
+  if (category === 'users') {
+    if (subCategory === 'identification') {
+      return await findOrCreateFolderPath(accessToken, ['Users', cleanUser, 'Identification'], rootId);
+    }
+    if (subCategory === 'contracts') {
+      const contractSub = (entityId || 'general').trim().replace(/[/\\?%*:|"<>]/g, '_');
+      const innerFolder = folderType === 'Images' ? 'Images' : 'Files';
+      return await findOrCreateFolderPath(accessToken, ['Users', cleanUser, 'Contracts', contractSub, innerFolder], rootId);
+    }
+    if (subCategory === 'payments') {
+      const payPeriod = (period || 'Kỳ thanh toán').trim().replace(/[/\\?%*:|"<>]/g, '_');
+      return await findOrCreateFolderPath(accessToken, ['Users', cleanUser, 'Payments', payPeriod], rootId);
+    }
+    return await findOrCreateFolderPath(accessToken, ['Users', cleanUser, folderType === 'Files' ? 'Files' : 'Images'], rootId);
+  }
+
+  // Fallback: Legacy Files/Images organization
   const subFolderId = await findOrCreateFolder(accessToken, folderType === 'Files' ? 'Files' : 'Images', rootId);
-  const userFolderId = await findOrCreateFolder(accessToken, cleanEmail, subFolderId);
+  const userFolderId = await findOrCreateFolder(accessToken, cleanUser, subFolderId);
   return userFolderId;
 }
 
 /**
  * Upload raw bytes to Google Drive via multipart upload
  */
-async function uploadToGoogleDrive({ buffer, filename, mimeType, folderType = 'Images', userEmail = 'general', env }) {
+async function uploadToGoogleDrive({ buffer, filename, mimeType, folderPath = null, folderType = 'Images', userEmail = 'general', category = null, subCategory = null, entityId = null, period = null, requestOrigin = '', env }) {
   const accessToken = await getGoogleDriveAccessToken(env);
-  const targetFolderId = await resolveTargetFolder(accessToken, folderType, userEmail, env);
+  const targetFolderId = await resolveTargetFolder(accessToken, { folderPath, folderType, userEmail, category, subCategory, entityId, period, env });
 
   const boundary = `-------314159265358979323846_${Date.now()}`;
   const delimiter = `\r\n--${boundary}\r\n`;
@@ -211,17 +255,20 @@ async function uploadToGoogleDrive({ buffer, filename, mimeType, folderType = 'I
     console.warn('[GoogleDrive Permission Warning]', permErr.message);
   }
 
-  const directLink = `https://lh3.googleusercontent.com/d/${fileId}`;
+  const originBase = requestOrigin || 'https://booking-system-be.iluvsunset.workers.dev';
+  const proxyUrl = `${originBase}/api/drive/file/${fileId}`;
   const webViewLink = fileData.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
 
   return {
     success: true,
     fileId,
     name: fileData.name,
-    url: directLink,
+    url: proxyUrl,
+    proxyUrl,
+    directLink: `https://lh3.googleusercontent.com/d/${fileId}`,
     webViewLink,
-    webContentLink: fileData.webContentLink || directLink,
-    thumbnailLink: fileData.thumbnailLink || directLink
+    webContentLink: fileData.webContentLink || proxyUrl,
+    thumbnailLink: fileData.thumbnailLink || proxyUrl
   };
 }
 
@@ -389,6 +436,43 @@ export default {
     }
 
     // =========================================================================
+    // API ROUTE: /api/drive/file/:fileId or /api/drive/view/:fileId (Streaming Proxy)
+    // =========================================================================
+    if (request.method === 'GET' && (url.pathname.startsWith('/api/drive/file/') || url.pathname.startsWith('/api/drive/view/'))) {
+      try {
+        const fileId = url.pathname.split('/').pop();
+        if (!fileId) {
+          return new Response('Missing file ID', { status: 400, headers: corsHeaders });
+        }
+
+        const accessToken = await getGoogleDriveAccessToken(env);
+        const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        if (!driveRes.ok) {
+          return new Response(`Google Drive file error: ${driveRes.status}`, { status: driveRes.status, headers: corsHeaders });
+        }
+
+        const contentType = driveRes.headers.get('content-type') || 'application/octet-stream';
+        const responseHeaders = new Headers({
+          ...corsHeaders,
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Access-Control-Allow-Origin': '*'
+        });
+
+        return new Response(driveRes.body, {
+          status: 200,
+          headers: responseHeaders
+        });
+      } catch (proxyErr) {
+        console.error('[Drive Proxy Error]', proxyErr);
+        return new Response(`Proxy error: ${proxyErr.message}`, { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // =========================================================================
     // API ROUTE: /api/upload (Google Drive File Streaming)
     // =========================================================================
     if (request.method === 'POST' && (url.pathname === '/api/upload' || url.pathname === '/upload')) {
@@ -408,12 +492,31 @@ export default {
         const rawEmail = request.headers.get('x-user-email') || request.headers.get('X-User-Email');
         const userEmail = rawEmail ? decodeURIComponent(rawEmail) : 'general';
 
+        const category = request.headers.get('x-category') || request.headers.get('X-Category') || null;
+        const subCategory = request.headers.get('x-sub-category') || request.headers.get('X-Sub-Category') || null;
+        const entityId = request.headers.get('x-entity-id') || request.headers.get('X-Entity-Id') ? decodeURIComponent(request.headers.get('x-entity-id') || request.headers.get('X-Entity-Id')) : null;
+        const period = request.headers.get('x-period') || request.headers.get('X-Period') ? decodeURIComponent(request.headers.get('x-period') || request.headers.get('X-Period')) : null;
+
+        let folderPath = null;
+        const rawFolderPath = request.headers.get('x-folder-path') || request.headers.get('X-Folder-Path');
+        if (rawFolderPath) {
+          try {
+            folderPath = JSON.parse(decodeURIComponent(rawFolderPath));
+          } catch {}
+        }
+
         const result = await uploadToGoogleDrive({
           buffer: arrayBuffer,
           filename,
           mimeType,
+          folderPath,
           folderType,
           userEmail,
+          category,
+          subCategory,
+          entityId,
+          period,
+          requestOrigin: url.origin,
           env
         });
 
