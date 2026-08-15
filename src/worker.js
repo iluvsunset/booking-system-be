@@ -1,7 +1,7 @@
 /**
  * Booking System Backend Worker (Cloudflare Worker)
  * Handles:
- * 1. Server-Side Google Drive Direct API Uploads (Native Web Crypto RS256 Auth & Multipart Upload)
+ * 1. Server-Side Google Drive API Uploads with Auto-Refreshing OAuth 2.0 User Tokens
  * 2. Server-Side OTP Generation & Verification
  * 3. Direct Gmail SMTP TLS Email Dispatch over TCP Sockets
  */
@@ -20,7 +20,6 @@ function normalizeContact(contact) {
 
 /**
  * Extracts raw Google Drive folder ID from full URLs or raw strings
- * Handles: https://drive.google.com/drive/folders/1nXSUrLoiR_SUV9Ethl5AqP6M_Xfjwl6g...
  */
 function extractFolderId(input) {
   if (!input) return null;
@@ -33,36 +32,12 @@ function extractFolderId(input) {
 }
 
 // =========================================================================
-// NATIVE WEB CRYPTO GOOGLE SERVICE ACCOUNT AUTHENTICATION (RS256)
+// GOOGLE DRIVE OAUTH 2.0 AUTO-REFRESHING ACCESS TOKEN
 // =========================================================================
 
-function getServiceAccountCredentials(env) {
-  const rawKey = env?.GOOGLE_SERVICE_ACCOUNT_JSON || env?.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (rawKey) {
-    try {
-      return typeof rawKey === 'string' ? JSON.parse(rawKey) : rawKey;
-    } catch (err) {
-      console.warn('[GoogleDrive] Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON env:', err.message);
-    }
-  }
-  return null;
-}
-
-function pemToBinary(pem) {
-  const b64 = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/\s+/g, '');
-  const raw = atob(b64);
-  const buf = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) {
-    buf[i] = raw.charCodeAt(i);
-  }
-  return buf.buffer;
-}
-
 /**
- * Generates an OAuth2 access token for Google Drive API using Native Web Crypto RS256 JWT
+ * Automatically retrieves or refreshes Google OAuth2 access token
+ * Uses OAuth 2.0 user credentials (with unlimited automatic refresh)
  */
 async function getGoogleDriveAccessToken(env) {
   const now = Math.floor(Date.now() / 1000);
@@ -70,76 +45,34 @@ async function getGoogleDriveAccessToken(env) {
     return cachedDriveToken;
   }
 
-  const credentials = getServiceAccountCredentials(env);
-  if (!credentials || !credentials.client_email || !credentials.private_key) {
-    throw new Error('Chưa cấu hình Google Service Account credentials (GOOGLE_SERVICE_ACCOUNT_JSON).');
+  const clientId = env?.GOOGLE_CLIENT_ID || '';
+  const clientSecret = env?.GOOGLE_CLIENT_SECRET || '';
+  const refreshToken = env?.GOOGLE_REFRESH_TOKEN || '';
+
+  if (clientId && clientSecret && refreshToken) {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token'
+      })
+    });
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      throw new Error(`Google OAuth2 Token Refresh failed (${tokenRes.status}): ${errText}`);
+    }
+
+    const tokenData = await tokenRes.json();
+    cachedDriveToken = tokenData.access_token;
+    driveTokenExpiresAt = now + (tokenData.expires_in || 3600);
+    return cachedDriveToken;
   }
 
-  const header = {
-    alg: 'RS256',
-    typ: 'JWT'
-  };
-
-  const claimSet = {
-    iss: credentials.client_email,
-    scope: 'https://www.googleapis.com/auth/drive',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now
-  };
-
-  const base64UrlEncode = (str) =>
-    btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedClaimSet = base64UrlEncode(JSON.stringify(claimSet));
-  const signatureInput = `${encodedHeader}.${encodedClaimSet}`;
-
-  // Import PKCS#8 RSA Private Key using native Web Crypto
-  const binaryKey = pemToBinary(credentials.private_key);
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    binaryKey,
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      hash: 'SHA-256'
-    },
-    false,
-    ['sign']
-  );
-
-  const encoder = new TextEncoder();
-  const signatureBuffer = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    cryptoKey,
-    encoder.encode(signatureInput)
-  );
-
-  const signatureBytes = new Uint8Array(signatureBuffer);
-  let binarySignature = '';
-  for (let i = 0; i < signatureBytes.length; i++) {
-    binarySignature += String.fromCharCode(signatureBytes[i]);
-  }
-  const signature = btoa(binarySignature).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-  const jwt = `${signatureInput}.${signature}`;
-
-  // Request OAuth2 access token
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
-  });
-
-  if (!tokenRes.ok) {
-    const errText = await tokenRes.text();
-    throw new Error(`Google OAuth2 Token failed (${tokenRes.status}): ${errText}`);
-  }
-
-  const tokenData = await tokenRes.json();
-  cachedDriveToken = tokenData.access_token;
-  driveTokenExpiresAt = now + (tokenData.expires_in || 3600);
-  return cachedDriveToken;
+  throw new Error('Chưa cấu hình Google OAuth2 credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN).');
 }
 
 /**
@@ -204,25 +137,6 @@ async function resolveTargetFolder(accessToken, folderType = 'Images', userEmail
 
   const rawRoot = env?.GOOGLE_DRIVE_ROOT_FOLDER_ID || env?.DRIVE_ROOT_FOLDER_ID;
   let rootId = extractFolderId(rawRoot);
-
-  if (!rootId) {
-    // Check if there is an existing folder shared with this Service Account from a human Google account
-    const sharedUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("sharedWithMe = true and mimeType = 'application/vnd.google-apps.folder' and trashed = false")}&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,owners)&spaces=drive`;
-    try {
-      const sharedRes = await fetch(sharedUrl, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      if (sharedRes.ok) {
-        const sharedData = await sharedRes.json();
-        const externalFolder = sharedData.files?.find(f =>
-          !f.owners?.some(o => o.emailAddress?.includes('gserviceaccount.com'))
-        ) || sharedData.files?.find(f => f.name === 'Booking System Drive');
-        if (externalFolder) {
-          rootId = externalFolder.id;
-        }
-      }
-    } catch {}
-  }
 
   if (!rootId) {
     rootId = await findOrCreateFolder(accessToken, 'Booking System Drive', null);
