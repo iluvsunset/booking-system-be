@@ -3,6 +3,7 @@
  * Features:
  * - Smooth Interactive Parallax Mesh Canvas with Mouse-responsive Light Particles
  * - 3D Interactive Gyroscopic Card Tilts with Ambient Specular Lighting
+ * - Perfectly Responsive Multi-Column Layout (Zero Overflow / Zero Clipping)
  * - Interactive Database Schema (ERD) Visualizer with Live Table Inspect & Relationship Highlights
  * - Interactive Google Drive Multi-Tier Storage Explorer with Animated Hierarchy Tree
  * - Live Edge API Playground & Request Runner with Real-Time Telemetry & Latency Diagnostics
@@ -70,7 +71,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       position: relative;
     }
 
-    /* Ambient Parallax Canvas Background */
+    /* Ambient Interactive Parallax Canvas Background */
     #parallaxCanvas {
       position: fixed;
       top: 0;
@@ -79,7 +80,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       height: 100vh;
       pointer-events: none;
       z-index: 1;
-      opacity: 0.65;
+      opacity: 0.75;
     }
 
     /* Application Root Viewport */
@@ -94,8 +95,8 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
 
     /* Sidebar Navigation */
     .app-sidebar {
-      width: 320px;
-      background: rgba(11, 14, 21, 0.88);
+      width: 300px;
+      background: rgba(11, 14, 21, 0.92);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border-right: 1px solid var(--border-subtle);
@@ -107,57 +108,57 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     }
 
     .sidebar-brand {
-      padding: 24px;
+      padding: 22px 20px;
       border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
     }
 
     .brand-icon-box {
-      width: 42px;
-      height: 42px;
+      width: 38px;
+      height: 38px;
       background: linear-gradient(135deg, #F3E5D0 0%, #D4AF37 50%, #7A5B36 100%);
-      border-radius: 12px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
       color: #06080C;
-      font-size: 20px;
-      box-shadow: 0 6px 22px var(--accent-glow);
+      font-size: 18px;
+      box-shadow: 0 4px 18px var(--accent-glow);
     }
 
     .brand-heading-text {
-      font-size: 15.5px;
+      font-size: 14.5px;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: #FFF;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .brand-badge-ver {
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 700;
       background: var(--accent-subtle);
       color: var(--accent);
-      padding: 2px 6px;
+      padding: 2px 5px;
       border-radius: 4px;
       border: 1px solid rgba(212, 175, 55, 0.3);
     }
 
     .brand-caption {
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--text-muted);
       font-weight: 500;
       margin-top: 1px;
     }
 
     .sidebar-search-box {
-      padding: 14px 18px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border-subtle);
     }
 
@@ -166,10 +167,10 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       background: var(--code-bg);
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
-      padding: 9px 14px;
+      padding: 8px 12px;
       color: #FFF;
       font-family: var(--font-sans);
-      font-size: 12.5px;
+      font-size: 12px;
       outline: none;
       transition: all 0.2s ease;
     }
@@ -182,30 +183,30 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     .sidebar-links {
       flex: 1;
       overflow-y: auto;
-      padding: 16px 12px 36px;
+      padding: 14px 10px 36px;
     }
 
     .sidebar-links::-webkit-scrollbar { width: 5px; }
     .sidebar-links::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
 
     .nav-label {
-      font-size: 10px;
+      font-size: 9.5px;
       text-transform: uppercase;
       font-weight: 800;
       color: var(--text-dim);
       letter-spacing: 0.1em;
-      padding: 16px 12px 6px;
+      padding: 14px 10px 6px;
     }
 
     .nav-anchor {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 7px 10px;
+      border-radius: 7px;
       color: var(--text-secondary);
       text-decoration: none;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 500;
       transition: all 0.15s ease;
       margin-bottom: 2px;
@@ -226,12 +227,12 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
 
     .method-tag {
       font-family: var(--font-mono);
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 800;
-      padding: 2px 6px;
+      padding: 2px 5px;
       border-radius: 4px;
       text-transform: uppercase;
-      min-width: 42px;
+      min-width: 38px;
       text-align: center;
     }
 
@@ -258,11 +259,11 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       position: sticky;
       top: 0;
       z-index: 40;
-      background: rgba(6, 8, 12, 0.8);
+      background: rgba(6, 8, 12, 0.85);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 14px 44px;
+      padding: 12px 36px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -271,12 +272,12 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     .telemetry-status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      font-size: 12px;
+      gap: 9px;
+      font-size: 11.5px;
       color: var(--method-get);
       background: rgba(16, 185, 129, 0.08);
       border: 1px solid rgba(16, 185, 129, 0.22);
-      padding: 5px 14px;
+      padding: 5px 12px;
       border-radius: 999px;
       font-weight: 600;
       letter-spacing: 0.02em;
@@ -299,21 +300,21 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .nav-btn {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       color: var(--text-secondary);
-      padding: 7px 15px;
+      padding: 6px 14px;
       border-radius: 8px;
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       transition: all 0.2s ease;
       text-decoration: none;
     }
@@ -339,12 +340,13 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
 
     /* Content Canvas */
     .stage-canvas {
-      padding: 44px 56px 120px;
-      max-width: 1320px;
+      padding: 36px 40px 120px;
+      max-width: 1360px;
+      width: 100%;
     }
 
     /* =========================================================================
-       FLAGSHIP HERO SECTION (Parallax 3D & Telemetry Topology)
+       FLAGSHIP HERO SECTION (Zero-Overflow Responsive Parallax Card)
        ========================================================================= */
     .flagship-hero {
       background: radial-gradient(circle at 15% 20%, rgba(212, 175, 55, 0.14) 0%, transparent 65%), rgba(14, 18, 27, 0.7);
@@ -352,26 +354,29 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       -webkit-backdrop-filter: blur(28px);
       border: 1px solid var(--border-card);
       border-radius: 24px;
-      padding: 48px;
-      margin-bottom: 56px;
+      padding: 40px;
+      margin-bottom: 52px;
       position: relative;
       overflow: hidden;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
-      transform-style: preserve-3d;
-      perspective: 1000px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .hero-split-layout {
       display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 44px;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 36px;
       align-items: center;
       position: relative;
       z-index: 2;
+      width: 100%;
     }
 
-    @media (max-width: 1080px) {
-      .hero-split-layout { grid-template-columns: 1fr; }
+    @media (max-width: 1160px) {
+      .hero-split-layout { grid-template-columns: 1fr; gap: 36px; }
+      .stage-canvas { padding: 24px 20px 100px; }
+      .flagship-hero { padding: 28px 24px; }
     }
 
     /* Left Hero Column */
@@ -381,23 +386,23 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       gap: 8px;
       background: rgba(212, 175, 55, 0.08);
       border: 1px solid rgba(212, 175, 55, 0.32);
-      padding: 5px 14px;
+      padding: 5px 12px;
       border-radius: 999px;
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 800;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .hero-title-giant {
-      font-size: 42px;
+      font-size: 38px;
       font-weight: 800;
       letter-spacing: -0.04em;
       color: #FFF;
       line-height: 1.18;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .hero-shimmer-accent {
@@ -407,26 +412,26 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     }
 
     .hero-narrative {
-      font-size: 15.5px;
+      font-size: 14.5px;
       color: var(--text-secondary);
       line-height: 1.65;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .hero-pill-cluster {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .feature-tag {
       background: rgba(11, 14, 21, 0.6);
       border: 1px solid var(--border-subtle);
       color: var(--text-muted);
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 600;
-      padding: 4px 10px;
+      padding: 4px 9px;
       border-radius: 6px;
       display: inline-flex;
       align-items: center;
@@ -439,22 +444,23 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       color: #FFF;
     }
 
-    .feature-tag svg { width: 13px; height: 13px; color: var(--accent); }
+    .feature-tag svg { width: 12px; height: 12px; color: var(--accent); }
 
     /* Interactive cURL Snippet Bar */
     .hero-terminal-bar {
       background: var(--code-bg);
       border: 1px solid var(--border-subtle);
       border-radius: 10px;
-      padding: 10px 16px;
+      padding: 8px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 28px;
+      gap: 10px;
+      margin-bottom: 26px;
       font-family: var(--font-mono);
-      font-size: 12.5px;
+      font-size: 12px;
       box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+      min-width: 0;
     }
 
     .terminal-command-text {
@@ -462,6 +468,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      min-width: 0;
     }
 
     .terminal-prefix { color: var(--accent); font-weight: 700; margin-right: 6px; }
@@ -472,11 +479,12 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       color: var(--text-primary);
       padding: 5px 12px;
       border-radius: 6px;
-      font-size: 11.5px;
+      font-size: 11px;
       font-family: var(--font-sans);
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
+      flex-shrink: 0;
       transition: all 0.2s ease;
     }
 
@@ -491,16 +499,16 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     .hero-actions-row {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .hero-cta-btn {
       background: linear-gradient(135deg, #F3E5D0, #D4AF37);
       color: #06080C;
       font-weight: 700;
-      font-size: 13.5px;
-      padding: 12px 24px;
-      border-radius: 9px;
+      font-size: 13px;
+      padding: 11px 22px;
+      border-radius: 8px;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
@@ -520,9 +528,9 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       border: 1px solid var(--border-subtle);
       color: var(--text-primary);
       font-weight: 600;
-      font-size: 13.5px;
-      padding: 12px 20px;
-      border-radius: 9px;
+      font-size: 13px;
+      padding: 11px 18px;
+      border-radius: 8px;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
@@ -536,16 +544,19 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       transform: translateY(-1px);
     }
 
-    /* Right Hero Column: Architecture Topology & Telemetry Card (3D Tiltable) */
+    /* Right Hero Column: Architecture Topology Card (3D Tiltable & Contained) */
     .hero-telemetry-pod {
-      background: rgba(11, 14, 21, 0.85);
+      background: rgba(11, 14, 21, 0.88);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-card);
-      border-radius: 18px;
-      padding: 24px;
+      border-radius: 16px;
+      padding: 20px;
       box-shadow: 0 12px 36px rgba(0,0,0,0.45);
       position: relative;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
     }
 
@@ -553,13 +564,13 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 16px;
+      padding-bottom: 14px;
       border-bottom: 1px solid var(--border-subtle);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .pod-title {
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -570,11 +581,11 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     }
 
     .pod-live-tag {
-      font-size: 11px;
+      font-size: 10.5px;
       font-family: var(--font-mono);
       color: var(--method-get);
       background: rgba(16, 185, 129, 0.1);
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 4px;
       border: 1px solid rgba(16, 185, 129, 0.2);
     }
@@ -583,12 +594,12 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     .topology-flow-box {
       background: var(--code-bg);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 18px 16px;
-      margin-bottom: 20px;
+      border-radius: 10px;
+      padding: 14px 12px;
+      margin-bottom: 16px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     .topology-node {
@@ -597,11 +608,12 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       justify-content: space-between;
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 12.5px;
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 12px;
       font-weight: 600;
       transition: all 0.2s ease;
+      min-width: 0;
     }
 
     .topology-node:hover {
@@ -613,14 +625,19 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     .node-title-box {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       color: #FFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .node-badge-desc {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10.5px;
       color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .node-arrow-divider {
@@ -628,7 +645,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       justify-content: center;
       color: var(--accent);
       opacity: 0.7;
-      font-size: 11.5px;
+      font-size: 11px;
       font-family: var(--font-mono);
     }
 
@@ -636,18 +653,18 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     .pod-metrics-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
     }
 
     .metric-brick {
       background: var(--bg-elevated);
       border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 12px 14px;
+      border-radius: 8px;
+      padding: 10px 12px;
     }
 
     .metric-caption {
-      font-size: 10.5px;
+      font-size: 10px;
       text-transform: uppercase;
       font-weight: 700;
       color: var(--text-dim);
@@ -657,23 +674,23 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
 
     .metric-stat {
       font-family: var(--font-mono);
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 700;
       color: #FFF;
     }
 
     /* Live Output Box */
     .hero-live-result {
-      margin-top: 14px;
-      padding: 12px 14px;
+      margin-top: 12px;
+      padding: 10px 12px;
       background: #000;
       border: 1px solid var(--method-get);
-      border-radius: 8px;
+      border-radius: 7px;
       font-family: var(--font-mono);
-      font-size: 11.5px;
+      font-size: 11px;
       color: #34D399;
       display: none;
-      max-height: 140px;
+      max-height: 120px;
       overflow-y: auto;
     }
 
@@ -711,8 +728,8 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     /* ERD Visualizer Grid */
     .erd-grid-layout {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 22px;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
       margin-bottom: 36px;
     }
 
@@ -790,8 +807,8 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: 16px;
-      padding: 34px;
-      margin-bottom: 38px;
+      padding: 32px;
+      margin-bottom: 36px;
       scroll-margin-top: 90px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
@@ -823,13 +840,13 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
 
     .api-endpoint-path {
       font-family: var(--font-mono);
-      font-size: 17.5px;
+      font-size: 17px;
       font-weight: 700;
       color: #FFF;
     }
 
     .api-desc {
-      font-size: 14.5px;
+      font-size: 14px;
       color: var(--text-secondary);
       line-height: 1.6;
       margin-bottom: 24px;
@@ -1061,9 +1078,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
         <!-- =========================================================================
              FLAGSHIP HERO SECTION
              ========================================================================= -->
-        <section id="overview" class="flagship-hero" id="heroCard">
-          <div class="hero-backdrop-glow"></div>
-          
+        <section id="overview" class="flagship-hero">
           <div class="hero-split-layout">
             <!-- Left Narrative Column -->
             <div>
@@ -1111,7 +1126,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
               <!-- CTA Row -->
               <div class="hero-actions-row">
                 <a href="#erd-visualizer" class="hero-cta-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
                   Explore ERD Studio
                 </a>
                 <a href="#api-drive-file" class="hero-secondary-btn">
@@ -1125,7 +1140,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
               <div class="hero-telemetry-pod" id="tiltPod">
                 <div class="pod-header-bar">
                   <span class="pod-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     Live Architecture Topology
                   </span>
                   <span class="pod-live-tag">QUIC / HTTP3</span>
@@ -1135,34 +1150,34 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
                 <div class="topology-flow-box">
                   <div class="topology-node">
                     <div class="node-title-box">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--method-get)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
-                      Client Request Ingress
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--method-get)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+                      Client Ingress
                     </div>
-                    <span class="node-badge-desc">React Router v8 SSR</span>
+                    <span class="node-badge-desc">React Router SSR</span>
                   </div>
 
                   <div class="node-arrow-divider">↓ HTTPS / TLS 1.3</div>
 
                   <div class="topology-node" style="border-color: rgba(212, 175, 55, 0.4); background: rgba(212, 175, 55, 0.06);">
                     <div class="node-title-box">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                       Cloudflare Edge Worker
                     </div>
-                    <span class="node-badge-desc" style="color: var(--accent);">V8 Isolate Proxy</span>
+                    <span class="node-badge-desc" style="color: var(--accent);">V8 Isolate</span>
                   </div>
 
                   <div class="node-arrow-divider">↓ Multi-Tier Dispatches</div>
 
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div class="topology-node" style="padding: 8px 10px;">
-                      <div class="node-title-box" style="font-size: 11.5px;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px;">
+                    <div class="topology-node" style="padding: 7px 9px;">
+                      <div class="node-title-box" style="font-size: 11px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
                         Supabase DB
                       </div>
                     </div>
-                    <div class="topology-node" style="padding: 8px 10px;">
-                      <div class="node-title-box" style="font-size: 11.5px;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <div class="topology-node" style="padding: 7px 9px;">
+                      <div class="node-title-box" style="font-size: 11px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                         Google Drive
                       </div>
                     </div>
@@ -1795,15 +1810,15 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       let targetMouseY = mouseY;
 
       const particles = [];
-      const numParticles = 48;
+      const numParticles = 50;
 
       for (let i = 0; i < numParticles; i++) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
           radius: Math.random() * 1.8 + 0.8,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: (Math.random() - 0.5) * 0.4,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
           color: Math.random() > 0.6 ? 'rgba(212, 175, 55, ' + (Math.random() * 0.5 + 0.2) + ')' : 'rgba(147, 197, 253, ' + (Math.random() * 0.3 + 0.1) + ')'
         });
       }
@@ -1825,7 +1840,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
         mouseY += (targetMouseY - mouseY) * 0.05;
 
         // Subtle gradient mesh follower
-        const radGrad = ctx.createRadialGradient(mouseX, mouseY, 10, mouseX, mouseY, 400);
+        const radGrad = ctx.createRadialGradient(mouseX, mouseY, 10, mouseX, mouseY, 420);
         radGrad.addColorStop(0, 'rgba(212, 175, 55, 0.08)');
         radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.fillStyle = radGrad;
@@ -1851,11 +1866,11 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
           for (let j = i + 1; j < particles.length; j++) {
             const p2 = particles[j];
             const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-            if (dist < 130) {
+            if (dist < 120) {
               ctx.beginPath();
               ctx.moveTo(p.x, p.y);
               ctx.lineTo(p2.x, p2.y);
-              ctx.strokeStyle = 'rgba(212, 175, 55, ' + (0.12 * (1 - dist / 130)) + ')';
+              ctx.strokeStyle = 'rgba(212, 175, 55, ' + (0.12 * (1 - dist / 120)) + ')';
               ctx.lineWidth = 0.6;
               ctx.stroke();
             }
@@ -1876,9 +1891,9 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
         const rect = tiltPod.getBoundingClientRect();
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
-        const rotateX = (-y / (rect.height / 2)) * 8;
-        const rotateY = (x / (rect.width / 2)) * 8;
-        tiltPod.style.transform = \`perspective(1000px) rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.02, 1.02, 1.02)\`;
+        const rotateX = (-y / (rect.height / 2)) * 6;
+        const rotateY = (x / (rect.width / 2)) * 6;
+        tiltPod.style.transform = \`perspective(1000px) rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale3d(1.015, 1.015, 1.015)\`;
       });
       tiltPod.addEventListener('mouseleave', () => {
         tiltPod.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
