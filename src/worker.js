@@ -745,6 +745,99 @@ export default {
     }
 
     // =========================================================================
+    // API ROUTE: DELETE /api/drive/file/:fileId & POST /api/drive/delete
+    // Permanently removes associated files and folders from Google Drive
+    // =========================================================================
+    if (
+      (request.method === 'DELETE' && url.pathname.startsWith('/api/drive/file/')) ||
+      (request.method === 'POST' && url.pathname === '/api/drive/delete')
+    ) {
+      try {
+        const fileIds = [];
+        let category = null;
+        let entityId = null;
+
+        if (request.method === 'DELETE') {
+          const directFileId = url.pathname.replace('/api/drive/file/', '').trim();
+          if (directFileId) fileIds.push(directFileId);
+        } else {
+          const body = await request.json().catch(() => ({}));
+          if (body.fileId) fileIds.push(body.fileId);
+          if (Array.isArray(body.fileIds)) fileIds.push(...body.fileIds);
+          if (body.urls && Array.isArray(body.urls)) {
+            body.urls.forEach(u => {
+              const fid = extractFolderId(u);
+              if (fid) fileIds.push(fid);
+            });
+          }
+          if (body.url) {
+            const fid = extractFolderId(body.url);
+            if (fid) fileIds.push(fid);
+          }
+          category = body.category;
+          entityId = body.entityId;
+        }
+
+        // Deduplicate file IDs
+        const uniqueIds = Array.from(new Set(fileIds.filter(Boolean)));
+        const deletedIds = [];
+        const errors = [];
+
+        // 1. Delete individual files by ID
+        for (const fId of uniqueIds) {
+          try {
+            const delUrl = `https://www.googleapis.com/drive/v3/files/${fId}?supportsAllDrives=true`;
+            const delRes = await fetchDriveWithRetry(delUrl, { method: 'DELETE' }, env);
+            if (delRes.ok || delRes.status === 404) {
+              deletedIds.push(fId);
+            } else {
+              const errTxt = await delRes.text();
+              console.warn(`[Drive Delete File Error] ${fId}:`, errTxt);
+              errors.push({ id: fId, status: delRes.status, error: errTxt });
+            }
+          } catch (delErr) {
+            errors.push({ id: fId, error: delErr.message });
+          }
+        }
+
+        // 2. Delete entire Category/Entity folder if provided (e.g. Category: Properties, entityId: PropertyName_p1)
+        if (category && entityId) {
+          try {
+            const rootFolderId = extractFolderId(env?.GOOGLE_DRIVE_FOLDER_ID) || DEFAULT_ROOT_FOLDER_ID;
+            const categoryName = category.toLowerCase() === 'properties' ? 'Properties' : 'Users';
+            const catFolderId = await findOrCreateFolder(null, categoryName, rootFolderId, env);
+            const targetFolderId = await findOrCreateFolder(null, entityId, catFolderId, env);
+            if (targetFolderId) {
+              const delFolderUrl = `https://www.googleapis.com/drive/v3/files/${targetFolderId}?supportsAllDrives=true`;
+              await fetchDriveWithRetry(delFolderUrl, { method: 'DELETE' }, env);
+              deletedIds.push(targetFolderId);
+            }
+          } catch (fErr) {
+            console.warn('[Drive Delete Folder Error]:', fErr.message);
+          }
+        }
+
+        folderCache.clear();
+
+        return new Response(JSON.stringify({
+          success: true,
+          deletedCount: deletedIds.length,
+          deletedIds,
+          errors: errors.length > 0 ? errors : undefined
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (err) {
+        console.error('[Drive Deletion Error]', err);
+        return new Response(JSON.stringify({ success: false, error: err.message || 'Lỗi khi xóa tài nguyên trên Google Drive' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // =========================================================================
     // API ROUTE: /api/upload (Google Drive File Streaming Upload)
     // =========================================================================
     if (request.method === 'POST' && (url.pathname === '/api/upload' || url.pathname === '/upload')) {
