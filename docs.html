@@ -1102,6 +1102,132 @@
           </table>
         </article>
 
+        <article id="tbl-payments" class="doc-section">
+          <h2 class="section-heading">Cơ sở Dữ liệu: payments (Giao dịch đóng tiền)</h2>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Cột</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="key-badge pk">PK</span> id</td><td>UUID</td><td>DEFAULT uuid_generate_v4()</td><td>Mã giao dịch</td></tr>
+              <tr><td><span class="key-badge fk">FK</span> payment_schedule_id</td><td>UUID</td><td>REFERENCES payment_schedules(id) ON DELETE CASCADE</td><td>Kỳ thanh toán liên kết</td></tr>
+              <tr><td>amount_paid</td><td>NUMERIC(15,2)</td><td>NOT NULL</td><td>Số tiền thực trả</td></tr>
+              <tr><td>payment_method</td><td>VARCHAR(50)</td><td>DEFAULT 'bank_transfer'</td><td>bank_transfer, momo, cash</td></tr>
+              <tr><td>payment_date</td><td>DATE</td><td>NOT NULL</td><td>Ngày thực hiện chuyển khoản</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article id="tbl-bookings" class="doc-section">
+          <h2 class="section-heading">Cơ sở Dữ liệu: bookings (Đặt phòng ngắn hạn)</h2>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Cột</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="key-badge pk">PK</span> id</td><td>UUID</td><td>DEFAULT uuid_generate_v4()</td><td>Mã đặt phòng</td></tr>
+              <tr><td>booking_number</td><td>VARCHAR(50)</td><td>UNIQUE NOT NULL</td><td>Số hiệu booking (BK-...)</td></tr>
+              <tr><td><span class="key-badge fk">FK</span> property_id</td><td>UUID</td><td>REFERENCES properties(id) ON DELETE CASCADE</td><td>Căn hộ / phòng đặt</td></tr>
+              <tr><td>check_in / check_out</td><td>DATE</td><td>NOT NULL</td><td>Ngày nhận và trả phòng</td></tr>
+              <tr><td>guest_name / phone</td><td>VARCHAR(100)</td><td>NOT NULL</td><td>Họ tên và SĐT khách</td></tr>
+              <tr><td>status</td><td>VARCHAR(50)</td><td>DEFAULT 'pending'</td><td>pending, confirmed, checked_in, cancelled</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article id="tbl-temp-res" class="doc-section">
+          <h2 class="section-heading">Cơ sở Dữ liệu: temp_residences (Khai báo tạm trú)</h2>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Cột</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="key-badge pk">PK</span> id</td><td>UUID</td><td>DEFAULT uuid_generate_v4()</td><td>Mã hồ sơ tạm trú</td></tr>
+              <tr><td>guest_name</td><td>VARCHAR(100)</td><td>NOT NULL</td><td>Họ và tên khách tạm trú</td></tr>
+              <tr><td>id_number</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>Số CCCD / Hộ chiếu</td></tr>
+              <tr><td>form_type</td><td>VARCHAR(20)</td><td>DEFAULT 'CT01'</td><td>Mẫu đơn CT01 / CT07</td></tr>
+              <tr><td>status</td><td>VARCHAR(50)</td><td>DEFAULT 'unsubmitted'</td><td>unsubmitted, submitted, accepted</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article id="tbl-documents" class="doc-section">
+          <h2 class="section-heading">Cơ sở Dữ liệu: documents (Hồ sơ & Tài liệu)</h2>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Cột</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="key-badge pk">PK</span> id</td><td>UUID</td><td>DEFAULT uuid_generate_v4()</td><td>Mã tài liệu</td></tr>
+              <tr><td>entity_type</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>Loại đối tượng (property, tenant, contract)</td></tr>
+              <tr><td>entity_id</td><td>UUID</td><td>NOT NULL</td><td>ID đối tượng liên kết</td></tr>
+              <tr><td>file_name</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Tên tệp tin gốc</td></tr>
+              <tr><td>blob_path</td><td>VARCHAR(500)</td><td>NOT NULL</td><td>Đường dẫn / URL Google Drive</td></tr>
+              <tr><td>is_encrypted</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Cờ bảo mật AES-256</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article id="tbl-notifications" class="doc-section">
+          <h2 class="section-heading">Cơ sở Dữ liệu: notifications (Thông báo đa kênh)</h2>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Cột</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="key-badge pk">PK</span> id</td><td>UUID</td><td>DEFAULT uuid_generate_v4()</td><td>Mã thông báo</td></tr>
+              <tr><td>channel</td><td>VARCHAR(50)</td><td>DEFAULT 'email'</td><td>email, zalo, sms, in_app</td></tr>
+              <tr><td>notification_type</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>payment_reminder, contract_expiring</td></tr>
+              <tr><td>content</td><td>TEXT</td><td>NOT NULL</td><td>Nội dung thông báo</td></tr>
+              <tr><td>status</td><td>VARCHAR(50)</td><td>DEFAULT 'pending'</td><td>pending, sent, failed</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article id="tbl-audit" class="doc-section">
+          <h2 class="section-heading">Cơ sở Dữ liệu: audit_logs (Nhật ký kiểm toán)</h2>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Cột</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="key-badge pk">PK</span> id</td><td>UUID</td><td>DEFAULT uuid_generate_v4()</td><td>Mã bản ghi nhật ký</td></tr>
+              <tr><td><span class="key-badge fk">FK</span> user_id</td><td>UUID</td><td>REFERENCES users(id)</td><td>Người thực hiện thao tác</td></tr>
+              <tr><td>action</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>INSERT, UPDATE, DELETE, UPLOAD</td></tr>
+              <tr><td>old_values / new_values</td><td>JSONB</td><td>NULLABLE</td><td>Dữ liệu JSON trước và sau thay đổi</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article id="tbl-users" class="doc-section">
+          <h2 class="section-heading">Cơ sở Dữ liệu: users (Tài khoản người dùng)</h2>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Cột</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="key-badge pk">PK</span> id</td><td>UUID</td><td>DEFAULT uuid_generate_v4()</td><td>Mã người dùng</td></tr>
+              <tr><td>full_name</td><td>VARCHAR(100)</td><td>NOT NULL</td><td>Họ và tên người dùng</td></tr>
+              <tr><td>phone / email</td><td>VARCHAR(20) / VARCHAR(200)</td><td>UNIQUE NOT NULL</td><td>Số điện thoại và email</td></tr>
+              <tr><td>role</td><td>VARCHAR(50)</td><td>DEFAULT 'owner'</td><td>admin, owner, manager, tenant</td></tr>
+              <tr><td>is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Trạng thái kích hoạt tài khoản</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <!-- API: Delete Single File -->
+        <article id="api-delete-single" class="doc-section">
+          <h2 class="section-heading">Xóa Tệp tin đơn lẻ trực tiếp</h2>
+          <div class="endpoint-banner">
+            <div class="endpoint-info">
+              <span class="badge-endpoint del">DELETE</span>
+              <span class="endpoint-path">/api/drive/file/:fileId</span>
+            </div>
+            <button class="btn-copy" onclick="copyText('https://booking-system-be.iluvsunset.workers.dev/api/drive/file/:fileId')">Sao chép</button>
+          </div>
+          <p class="lead-desc">Xóa trực tiếp 1 tệp tin trên Google Drive theo mã File ID truyền trên URL đường dẫn.</p>
+        </article>
+
         <!-- HTTP ERROR CODES -->
         <article id="section-error-codes" class="doc-section">
           <h2 class="section-heading">Mã lỗi & Trạng thái HTTP (Error Reference)</h2>
@@ -1172,6 +1298,44 @@
         btn.disabled = false;
       }
     }
+
+    // Smooth scroll inside article canvas
+    function scrollToSection(hash) {
+      if (!hash) return;
+      const target = document.querySelector(hash);
+      const container = document.querySelector('.article-canvas');
+      if (target && container) {
+        const topPos = target.offsetTop - 20;
+        container.scrollTo({ top: topPos, behavior: 'smooth' });
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+          item.classList.toggle('active', item.getAttribute('href') === hash);
+        });
+      }
+    }
+
+    // Intercept sidebar link clicks
+    document.querySelectorAll('.nav-item').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          e.preventDefault();
+          history.pushState(null, null, href);
+          scrollToSection(href);
+        }
+      });
+    });
+
+    // Handle hash on page load or back/forward
+    window.addEventListener('load', () => {
+      if (window.location.hash) {
+        setTimeout(() => scrollToSection(window.location.hash), 150);
+      }
+    });
+
+    window.addEventListener('hashchange', () => {
+      scrollToSection(window.location.hash);
+    });
 
     // Instant Search
     document.getElementById('docSearch').addEventListener('input', function(e) {
