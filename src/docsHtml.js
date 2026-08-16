@@ -1,828 +1,1501 @@
 /**
- * Interactive Professional API Documentation for Booking System Backend
+ * Luxury Interactive Flagship Developer Portal, Database ERD Studio & API Reference
+ * Built for Booking System Backend (Cloudflare Workers + Supabase PostgreSQL + Google Drive API)
  */
 export const API_DOCS_HTML = `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking System API — Developer Documentation & Reference</title>
+  <title>Booking System — Master API Reference & Database Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0F1115;
-      --sidebar-bg: #15181E;
-      --card-bg: #1A1D24;
-      --card-border: #262B35;
+      --bg-base: #080A0E;
+      --bg-surface: #0E1218;
+      --bg-elevated: #141922;
+      --bg-card: #161C26;
+      --border-subtle: #1F2736;
+      --border-focus: #C5A880;
+      
       --accent: #C5A880;
-      --accent-hover: #D8BFA0;
-      --accent-glow: rgba(197, 168, 128, 0.15);
-      --text: #F3F4F6;
-      --text-muted: #9CA3AF;
-      --text-dim: #6B7280;
-      --code-bg: #0B0D11;
+      --accent-light: #E4D2BC;
+      --accent-dim: #8E7352;
+      --accent-glow: rgba(197, 168, 128, 0.18);
+      --accent-subtle: rgba(197, 168, 128, 0.08);
+
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      --text-dim: #475569;
+
+      --code-bg: #05070A;
+      --code-border: #18202D;
+
       --method-get: #10B981;
       --method-post: #3B82F6;
-      --method-delete: #EF4444;
-      --method-put: #F59E0B;
-      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --method-del: #EF4444;
+      --method-patch: #F59E0B;
+      --badge-pk: #F43F5E;
+      --badge-fk: #A855F7;
+
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: var(--font-sans);
-      background-color: var(--bg);
-      color: var(--text);
+      background-color: var(--bg-base);
+      color: var(--text-primary);
       line-height: 1.6;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Outer Wrapper */
+    .viewport-root {
       display: flex;
       height: 100vh;
+      width: 100vw;
       overflow: hidden;
     }
 
-    /* Sidebar Navigation */
-    .sidebar {
+    /* Sidebar */
+    .docs-sidebar {
       width: 320px;
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--card-border);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      user-select: none;
     }
 
-    .brand-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--card-border);
+    .brand-box {
+      padding: 24px 24px 20px;
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
     }
 
-    .brand-logo {
-      width: 38px;
-      height: 38px;
-      background: linear-gradient(135deg, #C5A880, #8E5B3C);
+    .brand-gem {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #F3E7D7 0%, #C5A880 50%, #7A5B36 100%);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      color: #0F1115;
-      font-size: 18px;
-      box-shadow: 0 4px 12px var(--accent-glow);
+      color: #080A0E;
+      font-size: 20px;
+      box-shadow: 0 4px 18px var(--accent-glow);
     }
 
     .brand-title {
-      font-size: 17px;
-      font-weight: 700;
+      font-size: 15.5px;
+      font-weight: 800;
       letter-spacing: -0.02em;
       color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .brand-badge {
+    .brand-ver {
       font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      background: rgba(197, 168, 128, 0.18);
+      font-weight: 700;
+      background: var(--accent-subtle);
       color: var(--accent);
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-weight: 600;
-      margin-left: auto;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(197, 168, 128, 0.25);
     }
 
-    .search-box {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--card-border);
+    .brand-subtitle {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 1px;
     }
 
-    .search-input {
+    .search-container {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .search-field {
       width: 100%;
       background: var(--code-bg);
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border-subtle);
       border-radius: 8px;
       padding: 10px 14px;
-      color: var(--text);
+      color: #FFF;
       font-family: var(--font-sans);
       font-size: 13px;
       outline: none;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .search-input:focus {
+    .search-field:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-glow);
     }
 
-    .nav-list {
+    .sidebar-nav {
       flex: 1;
       overflow-y: auto;
-      padding: 16px 12px;
-      list-style: none;
+      padding: 16px 12px 36px;
     }
 
-    .nav-group-title {
-      font-size: 11px;
+    .sidebar-nav::-webkit-scrollbar { width: 5px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+
+    .nav-category {
+      font-size: 10.5px;
       text-transform: uppercase;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--text-dim);
       letter-spacing: 0.08em;
-      padding: 16px 12px 8px;
+      padding: 18px 12px 6px;
     }
 
-    .nav-item {
+    .nav-link {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 9px 12px;
-      border-radius: 8px;
-      color: var(--text-muted);
+      padding: 8px 12px;
+      border-radius: 7px;
+      color: var(--text-secondary);
       text-decoration: none;
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 500;
       transition: all 0.15s ease;
+      margin-bottom: 2px;
     }
 
-    .nav-item:hover, .nav-item.active {
-      background: var(--card-bg);
+    .nav-link:hover {
+      background: var(--bg-card);
       color: #FFF;
     }
 
-    .nav-item.active {
-      border-left: 3px solid var(--accent);
-      color: var(--accent);
+    .nav-link.active {
+      background: var(--bg-card);
+      color: var(--accent-light);
+      font-weight: 600;
+      border-left: 2px solid var(--accent);
     }
 
-    .method-pill {
+    .nav-tag {
       font-family: var(--font-mono);
-      font-size: 9.5px;
-      font-weight: 700;
+      font-size: 9px;
+      font-weight: 800;
       padding: 2px 6px;
       border-radius: 4px;
       text-transform: uppercase;
-      min-width: 44px;
+      min-width: 42px;
       text-align: center;
     }
 
-    .method-pill.get { background: rgba(16, 185, 129, 0.15); color: var(--method-get); }
-    .method-pill.post { background: rgba(59, 130, 246, 0.15); color: var(--method-post); }
-    .method-pill.delete { background: rgba(239, 68, 68, 0.15); color: var(--method-delete); }
+    .nav-tag.get { background: rgba(16, 185, 129, 0.15); color: var(--method-get); }
+    .nav-tag.post { background: rgba(59, 130, 246, 0.15); color: var(--method-post); }
+    .nav-tag.del { background: rgba(239, 68, 68, 0.15); color: var(--method-del); }
+    .nav-tag.db { background: rgba(168, 85, 247, 0.18); color: #C084FC; }
 
-    /* Main Content Area */
-    .main-content {
+    /* Main Content Region */
+    .docs-stage {
       flex: 1;
+      height: 100vh;
       overflow-y: auto;
       scroll-behavior: smooth;
-      padding: 40px 60px 80px;
+      display: flex;
+      flex-direction: column;
     }
 
-    .top-status-bar {
+    .docs-stage::-webkit-scrollbar { width: 7px; }
+    .docs-stage::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+
+    /* Sticky Header */
+    .stage-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(8, 10, 14, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 44px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 40px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--card-border);
     }
 
-    .status-indicator {
+    .status-capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--method-get);
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .ping-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--method-get);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--method-get);
+      animation: pulsePing 2s infinite ease-in-out;
+    }
+
+    @keyframes pulsePing {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.8); opacity: 0.4; }
+    }
+
+    .stage-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pill-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .pill-btn:hover {
+      background: var(--bg-elevated);
+      color: #FFF;
+      border-color: var(--text-muted);
+    }
+
+    .pill-btn.gold {
+      background: var(--accent);
+      color: #080A0E;
+      border: none;
+    }
+
+    .pill-btn.gold:hover {
+      background: var(--accent-light);
+    }
+
+    /* Content Canvas */
+    .docs-canvas {
+      padding: 44px 56px 120px;
+      max-width: 1280px;
+    }
+
+    /* Hero Parallax Card */
+    .hero-pod {
+      background: radial-gradient(circle at 10% 20%, rgba(197, 168, 128, 0.12) 0%, transparent 60%), var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 44px;
+      margin-bottom: 56px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    .hero-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
-      color: var(--method-get);
-      background: rgba(16, 185, 129, 0.1);
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-weight: 500;
     }
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--method-get);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--method-get);
-    }
-
-    .hero-section {
-      margin-bottom: 48px;
-    }
-
-    .hero-title {
-      font-size: 32px;
+    .hero-lead {
+      font-size: 36px;
       font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 12px;
+      letter-spacing: -0.035em;
       color: #FFF;
+      line-height: 1.25;
+      margin-bottom: 16px;
     }
 
-    .hero-subtitle {
-      font-size: 16px;
-      color: var(--text-muted);
-      max-width: 780px;
-      line-height: 1.6;
+    .hero-subtext {
+      font-size: 15.5px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      max-width: 860px;
+      margin-bottom: 32px;
     }
 
-    .base-url-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
+    .hero-stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 28px;
+    }
+
+    .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.05em; }
+    .stat-value { font-family: var(--font-mono); font-size: 15px; font-weight: 700; color: #FFF; }
+
+    /* Section Headers */
+    .section-wrap {
+      margin-bottom: 64px;
+      scroll-margin-top: 90px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 26px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .section-heading {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-subheading {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ERD Visualizer Grid */
+    .erd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
+      margin-bottom: 36px;
+    }
+
+    .erd-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+
+    .erd-card:hover {
+      border-color: rgba(197, 168, 128, 0.45);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    }
+
+    .erd-card-header {
       padding: 16px 20px;
-      margin-top: 24px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
     }
 
-    .base-url-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: var(--accent);
-      font-weight: 700;
-      letter-spacing: 0.05em;
-    }
-
-    .base-url-val {
+    .erd-card-title {
       font-family: var(--font-mono);
-      font-size: 14px;
+      font-weight: 700;
+      font-size: 14.5px;
       color: #FFF;
-      word-break: break-all;
-    }
-
-    .copy-btn {
-      background: var(--code-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-family: var(--font-sans);
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.2s ease;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
-    .copy-btn:hover {
-      background: var(--card-border);
-      color: #FFF;
+    .erd-row {
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+      font-family: var(--font-mono);
     }
 
-    /* Endpoint Card */
+    .erd-row:last-child { border-bottom: none; }
+
+    .erd-col-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #E2E8F0;
+    }
+
+    .erd-type-info {
+      color: var(--text-dim);
+      font-size: 11.5px;
+    }
+
+    .key-badge {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .key-badge.pk { background: rgba(244, 63, 94, 0.15); color: var(--badge-pk); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .key-badge.fk { background: rgba(168, 85, 247, 0.15); color: var(--badge-fk); border: 1px solid rgba(168, 85, 247, 0.3); }
+
+    /* Endpoint Specification Card */
     .endpoint-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
       border-radius: 16px;
-      padding: 32px;
+      padding: 36px;
       margin-bottom: 40px;
-      scroll-margin-top: 40px;
-      transition: border-color 0.2s ease;
+      scroll-margin-top: 90px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
 
     .endpoint-card:hover {
-      border-color: rgba(197, 168, 128, 0.4);
+      border-color: rgba(197, 168, 128, 0.3);
     }
 
-    .endpoint-header {
+    .endpoint-meta-bar {
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
-    .endpoint-badge {
+    .badge-method {
       font-family: var(--font-mono);
       font-size: 12px;
-      font-weight: 700;
-      padding: 4px 10px;
+      font-weight: 800;
+      padding: 5px 12px;
       border-radius: 6px;
       text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
-    .endpoint-badge.get { background: rgba(16, 185, 129, 0.15); color: var(--method-get); }
-    .endpoint-badge.post { background: rgba(59, 130, 246, 0.15); color: var(--method-post); }
-    .endpoint-badge.delete { background: rgba(239, 68, 68, 0.15); color: var(--method-delete); }
+    .badge-method.get { background: rgba(16, 185, 129, 0.15); color: var(--method-get); }
+    .badge-method.post { background: rgba(59, 130, 246, 0.15); color: var(--method-post); }
+    .badge-method.del { background: rgba(239, 68, 68, 0.15); color: var(--method-del); }
+    .badge-method.patch { background: rgba(245, 158, 11, 0.15); color: var(--method-patch); }
 
-    .endpoint-path {
+    .endpoint-pathname {
       font-family: var(--font-mono);
       font-size: 18px;
-      font-weight: 600;
+      font-weight: 700;
       color: #FFF;
     }
 
-    .endpoint-desc {
+    .endpoint-description {
       font-size: 14.5px;
-      color: var(--text-muted);
-      margin-bottom: 24px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 26px;
     }
 
-    /* Section Subheadings */
-    .section-title {
-      font-size: 13px;
-      font-weight: 700;
+    .subhead-label {
+      font-size: 12px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-weight: 800;
+      letter-spacing: 0.06em;
       color: var(--accent);
-      margin: 24px 0 12px;
+      margin: 26px 0 10px;
     }
 
-    /* Parameter Table */
-    .params-table {
+    /* Params Table */
+    .specs-table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 24px;
-      font-size: 13.5px;
+      font-size: 13px;
     }
 
-    .params-table th {
+    .specs-table th {
       text-align: left;
       padding: 10px 14px;
       background: var(--code-bg);
       color: var(--text-dim);
-      font-weight: 600;
-      border-bottom: 1px solid var(--card-border);
-      font-size: 12px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-subtle);
       text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
     }
 
-    .params-table td {
+    .specs-table td {
       padding: 12px 14px;
-      border-bottom: 1px solid var(--card-border);
-      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
     }
 
-    .param-name {
-      font-family: var(--font-mono);
-      color: #FFF;
-      font-weight: 600;
-    }
-
-    .param-type {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--accent);
-    }
-
-    .param-required {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
+    .tag-mandatory {
+      font-size: 9px;
+      font-weight: 800;
       background: rgba(239, 68, 68, 0.15);
-      color: var(--method-delete);
-      margin-left: 6px;
-    }
-
-    .param-optional {
-      font-size: 10px;
-      font-weight: 700;
+      color: var(--method-del);
       padding: 2px 6px;
       border-radius: 4px;
-      text-transform: uppercase;
-      background: rgba(156, 163, 175, 0.15);
-      color: var(--text-dim);
       margin-left: 6px;
+      text-transform: uppercase;
     }
 
-    /* Code Blocks */
-    .code-container {
+    .tag-optional {
+      font-size: 9px;
+      font-weight: 800;
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text-dim);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      text-transform: uppercase;
+    }
+
+    /* Code Container */
+    .snippet-box {
       background: var(--code-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
+      border: 1px solid var(--code-border);
+      border-radius: 12px;
       overflow: hidden;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
-    .code-header {
+    .snippet-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 16px;
-      background: rgba(255, 255, 255, 0.02);
-      border-bottom: 1px solid var(--card-border);
-      font-size: 12px;
-      color: var(--text-dim);
-      font-weight: 600;
+      background: #0B0E14;
+      border-bottom: 1px solid var(--code-border);
+      padding: 0 16px;
     }
 
-    pre {
-      padding: 16px;
-      overflow-x: auto;
+    .snippet-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      padding: 10px 14px;
+      font-size: 12px;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .copy-snippet-btn {
+      background: none;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      transition: all 0.2s ease;
+    }
+
+    .copy-snippet-btn:hover {
+      background: var(--border-subtle);
+      color: #FFF;
+    }
+
+    pre code {
+      display: block;
+      padding: 18px 20px;
       font-family: var(--font-mono);
       font-size: 13px;
-      color: #E5E7EB;
-      line-height: 1.5;
+      color: #E2E8F0;
+      line-height: 1.6;
+      overflow-x: auto;
     }
 
-    /* Live Tester Section */
-    .tester-card {
-      background: rgba(197, 168, 128, 0.04);
-      border: 1px dashed var(--accent);
+    /* Interactive Live Tester Section */
+    .tester-widget {
+      background: rgba(197, 168, 128, 0.03);
+      border: 1px dashed rgba(197, 168, 128, 0.35);
       border-radius: 12px;
-      padding: 20px;
+      padding: 20px 24px;
       margin-top: 24px;
     }
 
-    .tester-header {
+    .tester-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .tester-title {
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 700;
-      color: var(--accent);
+      color: var(--accent-light);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
-    .send-req-btn {
-      background: var(--accent);
-      color: #0F1115;
+    .send-test-btn {
+      background: linear-gradient(135deg, #C5A880, #8E7352);
+      color: #080A0E;
       border: none;
-      padding: 8px 18px;
+      padding: 7px 18px;
       border-radius: 6px;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12.5px;
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: all 0.2s ease;
     }
 
-    .send-req-btn:hover {
-      background: var(--accent-hover);
+    .send-test-btn:hover {
+      background: #D8BFA0;
+      transform: translateY(-1px);
     }
 
-    .tester-result {
+    .tester-output {
       margin-top: 14px;
-      padding: 12px;
+      padding: 14px;
       background: var(--code-bg);
       border-radius: 8px;
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--code-border);
       font-family: var(--font-mono);
       font-size: 12.5px;
-      color: #A7F3D0;
-      max-height: 200px;
+      color: #34D399;
+      max-height: 220px;
       overflow-y: auto;
       display: none;
     }
+
+    /* Storage Tree */
+    .storage-tree-box {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 12px;
+      padding: 24px 28px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #CBD5E1;
+      margin-bottom: 28px;
+      line-height: 1.85;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    .tree-folder { color: var(--accent); font-weight: 700; }
+    .tree-file { color: #60A5FA; }
+    .tree-comment { color: var(--text-dim); font-style: italic; }
   </style>
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="brand-header">
-      <div class="brand-logo">B</div>
-      <div>
-        <div class="brand-title">Booking System BE</div>
-      </div>
-      <div class="brand-badge">v2.4</div>
-    </div>
-
-    <div class="search-box">
-      <input type="text" class="search-input" placeholder="Search endpoints... (Ctrl+K)" id="searchBar">
-    </div>
-
-    <ul class="nav-list">
-      <div class="nav-group-title">Overview</div>
-      <li><a href="#overview" class="nav-item active">Architecture & Overview</a></li>
-      <li><a href="#auth-flow" class="nav-item">Stateless Auth & HMAC</a></li>
-
-      <div class="nav-group-title">Google Drive Endpoints</div>
-      <li><a href="#endpoint-stream" class="nav-item"><span class="method-pill get">GET</span> /file/:fileId</a></li>
-      <li><a href="#endpoint-thumb" class="nav-item"><span class="method-pill get">GET</span> /thumbnail/:fileId</a></li>
-      <li><a href="#endpoint-upload" class="nav-item"><span class="method-pill post">POST</span> /api/upload</a></li>
-      <li><a href="#endpoint-delete-batch" class="nav-item"><span class="method-pill post">POST</span> /api/drive/delete</a></li>
-      <li><a href="#endpoint-delete-single" class="nav-item"><span class="method-pill delete">DEL</span> /file/:fileId</a></li>
-
-      <div class="nav-group-title">Authentication & OTP</div>
-      <li><a href="#endpoint-req-otp" class="nav-item"><span class="method-pill post">POST</span> /api/request-otp</a></li>
-      <li><a href="#endpoint-ver-otp" class="nav-item"><span class="method-pill post">POST</span> /api/verify-otp</a></li>
-
-      <div class="nav-group-title">Email Dispatch</div>
-      <li><a href="#endpoint-send-email" class="nav-item"><span class="method-pill post">POST</span> /api/send-email</a></li>
-    </ul>
-  </aside>
-
-  <!-- Main Documentation -->
-  <main class="main-content">
-    <div class="top-status-bar">
-      <div class="status-indicator">
-        <span class="status-dot"></span> Cloudflare Edge API Operational
-      </div>
-      <div style="font-size: 13px; color: var(--text-dim); font-family: var(--font-mono);">
-        Worker: booking-system-be
-      </div>
-    </div>
-
-    <!-- Hero / Overview -->
-    <section id="overview" class="hero-section">
-      <h1 class="hero-title">API Reference & Documentation</h1>
-      <p class="hero-subtitle">
-        High-performance Cloudflare Workers backend for Booking System. Provides auto-refreshing Google Drive OAuth2 storage, low-latency streaming proxies with byte-range support, stateless HMAC-signed OTP authentication, and direct Gmail SMTP email dispatch.
-      </p>
-
-      <div class="base-url-card">
+  <div class="viewport-root">
+    <!-- Sidebar -->
+    <aside class="docs-sidebar">
+      <div class="brand-box">
+        <div class="brand-gem">B</div>
         <div>
-          <div class="base-url-label">Production Base URL</div>
-          <div class="base-url-val" id="prodBaseUrl">https://booking-system-be.iluvsunset.workers.dev</div>
+          <div class="brand-title">Booking System <span class="brand-ver">v2.5</span></div>
+          <div class="brand-subtitle">Cloudflare Edge & Supabase DB</div>
         </div>
-        <button class="copy-btn" onclick="copyText('https://booking-system-be.iluvsunset.workers.dev')">📋 Copy URL</button>
       </div>
-    </section>
 
-    <!-- SECTION: GET /api/drive/file/:fileId -->
-    <div class="endpoint-card" id="endpoint-stream">
-      <div class="endpoint-header">
-        <span class="endpoint-badge get">GET / HEAD</span>
-        <span class="endpoint-path">/api/drive/file/:fileId</span>
+      <div class="search-container">
+        <input type="text" class="search-field" placeholder="Search tables & APIs... (Cmd+K)" id="docSearch">
       </div>
-      <p class="endpoint-desc">
-        Streams full binary content for any file stored in Google Drive directly through the Cloudflare Worker with HTTP 206 Partial Content (Byte-Range) support for video and audio playback.
-      </p>
 
-      <div class="section-title">Path Parameters</div>
-      <table class="params-table">
-        <thead>
-          <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="param-name">fileId</span><span class="param-required">Required</span></td>
-            <td><span class="param-type">string</span></td>
-            <td>Google Drive File ID or alphanumeric ID string</td>
-          </tr>
-        </tbody>
-      </table>
+      <nav class="sidebar-nav">
+        <div class="nav-category">Architecture</div>
+        <a href="#overview" class="nav-link active">⚡ Edge & Core Overview</a>
+        <a href="#storage-arch" class="nav-link">📁 Google Drive Storage Tree</a>
 
-      <div class="section-title">Example Request (cURL)</div>
-      <div class="code-container">
-        <div class="code-header">
-          <span>cURL</span>
-          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        <div class="nav-category">Database ERD & Tables (11)</div>
+        <a href="#erd-visualizer" class="nav-link">🗄️ Visual Schema Studio</a>
+        <a href="#schema-properties" class="nav-link"><span class="nav-tag db">TBL</span> properties</a>
+        <a href="#schema-tenants" class="nav-link"><span class="nav-tag db">TBL</span> tenants</a>
+        <a href="#schema-contracts" class="nav-link"><span class="nav-tag db">TBL</span> contracts</a>
+        <a href="#schema-schedules" class="nav-link"><span class="nav-tag db">TBL</span> payment_schedules</a>
+        <a href="#schema-payments" class="nav-link"><span class="nav-tag db">TBL</span> payments</a>
+        <a href="#schema-bookings" class="nav-link"><span class="nav-tag db">TBL</span> bookings</a>
+        <a href="#schema-temp-res" class="nav-link"><span class="nav-tag db">TBL</span> temp_residences</a>
+        <a href="#schema-documents" class="nav-link"><span class="nav-tag db">TBL</span> documents</a>
+        <a href="#schema-notifications" class="nav-link"><span class="nav-tag db">TBL</span> notifications</a>
+        <a href="#schema-audit" class="nav-link"><span class="nav-tag db">TBL</span> audit_logs</a>
+        <a href="#schema-users" class="nav-link"><span class="nav-tag db">TBL</span> users</a>
+
+        <div class="nav-category">Google Drive Proxy APIs</div>
+        <a href="#api-drive-file" class="nav-link"><span class="nav-tag get">GET</span> /api/drive/file/:id</a>
+        <a href="#api-drive-thumb" class="nav-link"><span class="nav-tag get">GET</span> /api/drive/thumbnail/:id</a>
+        <a href="#api-drive-upload" class="nav-link"><span class="nav-tag post">POST</span> /api/upload</a>
+        <a href="#api-drive-delete" class="nav-link"><span class="nav-tag post">POST</span> /api/drive/delete</a>
+        <a href="#api-drive-del-single" class="nav-link"><span class="nav-tag del">DEL</span> /api/drive/file/:id</a>
+
+        <div class="nav-category">Auth & Email APIs</div>
+        <a href="#api-otp-request" class="nav-link"><span class="nav-tag post">POST</span> /api/request-otp</a>
+        <a href="#api-otp-verify" class="nav-link"><span class="nav-tag post">POST</span> /api/verify-otp</a>
+        <a href="#api-send-email" class="nav-link"><span class="nav-tag post">POST</span> /api/send-email</a>
+      </nav>
+    </aside>
+
+    <!-- Main Stage -->
+    <div class="docs-stage">
+      <!-- Sticky Top Header -->
+      <header class="stage-header">
+        <div class="status-capsule">
+          <span class="ping-dot"></span> Edge Worker & Supabase Operational
         </div>
-        <pre>curl -i "https://booking-system-be.iluvsunset.workers.dev/api/drive/file/1nXSUrLoiR_SUV9Ethl5AqP6M_Xfjwl6g"</pre>
-      </div>
-
-      <div class="section-title">Response (200 OK / 206 Partial Content)</div>
-      <div class="code-container">
-        <div class="code-header">
-          <span>HTTP Headers</span>
+        <div class="stage-controls">
+          <a href="#erd-visualizer" class="pill-btn">📊 ERD Studio</a>
+          <button class="pill-btn" onclick="copyBaseUrl()">📋 Base URL</button>
+          <a href="https://github.com/iluvsunset/booking-system-fe" target="_blank" class="pill-btn gold">GitHub Repo ↗</a>
         </div>
-        <pre>HTTP/2 200 OK
-Content-Type: image/jpeg
-Content-Length: 1048576
-Accept-Ranges: bytes
-Cache-Control: public, max-age=604800, stale-while-revalidate=86400
-Access-Control-Allow-Origin: *</pre>
-      </div>
-    </div>
+      </header>
 
-    <!-- SECTION: GET /api/drive/thumbnail/:fileId -->
-    <div class="endpoint-card" id="endpoint-thumb">
-      <div class="endpoint-header">
-        <span class="endpoint-badge get">GET</span>
-        <span class="endpoint-path">/api/drive/thumbnail/:fileId</span>
-      </div>
-      <p class="endpoint-desc">
-        Streams optimized image thumbnails directly from Google Drive cache. Significantly reduces bandwidth and accelerates card grid render times.
-      </p>
+      <!-- Docs Canvas Body -->
+      <main class="docs-canvas">
 
-      <div class="section-title">Query Parameters</div>
-      <table class="params-table">
-        <thead>
-          <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="param-name">sz</span><span class="param-optional">Optional</span></td>
-            <td><span class="param-type">string</span></td>
-            <td>Size preset (e.g. <code>s400</code>, <code>s800</code>, <code>w1000</code>). Default: <code>s400</code></td>
-          </tr>
-        </tbody>
-      </table>
+        <!-- Hero Section -->
+        <section id="overview" class="hero-pod">
+          <div class="hero-kicker">Master Reference & Developer Studio</div>
+          <h1 class="hero-lead">Booking System Core API & Database Engine</h1>
+          <p class="hero-subtext">
+            Enterprise architecture combining <strong>Cloudflare Workers (Edge Compute)</strong> with <strong>Supabase PostgreSQL (ACID Relational DB)</strong> and <strong>Google Drive API (Unlimited Media Asset Storage)</strong>. Featuring stateless HMAC-SHA256 OTP verification, raw TCP TLS SMTP email dispatch, and auto-purging asset lifecycle management.
+          </p>
 
-      <div class="section-title">Example URL</div>
-      <div class="code-container">
-        <pre>https://booking-system-be.iluvsunset.workers.dev/api/drive/thumbnail/1nXSUrLoiR_SUV9Ethl5AqP6M_Xfjwl6g?sz=s400</pre>
-      </div>
-    </div>
+          <div class="hero-stats-row">
+            <div>
+              <div class="stat-label">Compute Runtime</div>
+              <div class="stat-value">Cloudflare V8 Isolates</div>
+            </div>
+            <div>
+              <div class="stat-label">Database Engine</div>
+              <div class="stat-value">PostgreSQL 15 + RLS</div>
+            </div>
+            <div>
+              <div class="stat-label">Storage Gateway</div>
+              <div class="stat-value">Google Drive OAuth2</div>
+            </div>
+            <div>
+              <div class="stat-label">Auth Engine</div>
+              <div class="stat-value">Stateless HMAC-SHA256</div>
+            </div>
+          </div>
+        </section>
 
-    <!-- SECTION: POST /api/upload -->
-    <div class="endpoint-card" id="endpoint-upload">
-      <div class="endpoint-header">
-        <span class="endpoint-badge post">POST</span>
-        <span class="endpoint-path">/api/upload</span>
-      </div>
-      <p class="endpoint-desc">
-        Uploads binary raw byte payloads directly to Google Drive and automatically organizes files into multi-tier folders (<code>Properties/{name}_{id}/Images</code> or <code>Users/{user}/Identification/</code>).
-      </p>
+        <!-- SECTION: Storage Architecture -->
+        <section id="storage-arch" class="section-wrap">
+          <div class="section-header">
+            <div>
+              <h2 class="section-heading">📁 Google Drive Multi-Tier Storage Architecture</h2>
+              <p class="section-subheading">Hierarchical folder tree automatically managed on Google Drive by the backend worker</p>
+            </div>
+          </div>
 
-      <div class="section-title">Required HTTP Headers</div>
-      <table class="params-table">
-        <thead>
-          <tr><th>Header</th><th>Type</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="param-name">Content-Type</span><span class="param-required">Required</span></td>
-            <td><span class="param-type">string</span></td>
-            <td>MIME Type of the file (e.g. <code>image/jpeg</code>, <code>application/pdf</code>)</td>
-          </tr>
-          <tr>
-            <td><span class="param-name">X-File-Name</span><span class="param-required">Required</span></td>
-            <td><span class="param-type">string</span></td>
-            <td>URL-encoded target filename (e.g. <code>photo_01.jpg</code>)</td>
-          </tr>
-          <tr>
-            <td><span class="param-name">X-Category</span><span class="param-optional">Optional</span></td>
-            <td><span class="param-type">string</span></td>
-            <td><code>properties</code> | <code>users</code></td>
-          </tr>
-          <tr>
-            <td><span class="param-name">X-Entity-Id</span><span class="param-optional">Optional</span></td>
-            <td><span class="param-type">string</span></td>
-            <td>Identifier for property folder or user folder</td>
-          </tr>
-          <tr>
-            <td><span class="param-name">X-Folder-Type</span><span class="param-optional">Optional</span></td>
-            <td><span class="param-type">string</span></td>
-            <td><code>Images</code> | <code>Files</code></td>
-          </tr>
-        </tbody>
-      </table>
+          <div class="storage-tree-box">
+            <div>📁 <span class="tree-folder">Booking System Drive (Root ID: 1nXSUrLoiR_SUV9Ethl5AqP6M_Xfjwl6g)</span></div>
+            <div>│</div>
+            <div>├── 📁 <span class="tree-folder">Properties/</span> <span class="tree-comment">— Real estate visual assets</span></div>
+            <div>│   └── 📁 <span class="tree-folder">{PropertyName}_{PropertyUUID}/</span></div>
+            <div>│       ├── 📁 <span class="tree-folder">Images/</span></div>
+            <div>│       │   ├── 🖼️ <span class="tree-file">gallery_01.webp</span></div>
+            <div>│       │   └── 🖼️ <span class="tree-file">cover_photo.jpg</span></div>
+            <div>│       └── 📁 <span class="tree-folder">Files/</span> <span class="tree-comment">— Blueprints, inspection reports</span></div>
+            <div>│</div>
+            <div>└── 📁 <span class="tree-folder">Users/</span> <span class="tree-comment">— Tenants, residents & identity documents</span></div>
+            <div>    └── 📁 <span class="tree-folder">{TenantEmail_or_Phone}/</span></div>
+            <div>        ├── 📁 <span class="tree-folder">Identification/</span></div>
+            <div>        │   ├── 🖼️ <span class="tree-file">cccd_front_17238491.jpg</span></div>
+            <div>        │   └── 🖼️ <span class="tree-file">cccd_back_17238492.jpg</span></div>
+            <div>        ├── 📁 <span class="tree-folder">Contracts/</span></div>
+            <div>        │   └── 📁 <span class="tree-folder">{ContractNumber}/</span></div>
+            <div>        │       ├── 📄 <span class="tree-file">signed_lease_agreement.pdf</span></div>
+            <div>        │       └── 🖼️ <span class="tree-file">contract_appendix.jpg</span></div>
+            <div>        └── 📁 <span class="tree-folder">Payments/</span></div>
+            <div>            └── 📁 <span class="tree-folder">{Period_Month_Year}/</span></div>
+            <div>                └── 🖼️ <span class="tree-file">bank_transfer_receipt.png</span></div>
+          </div>
+        </section>
 
-      <div class="section-title">Response (200 OK)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Response</span></div>
-        <pre>{
+        <!-- SECTION: ERD Visualizer Studio -->
+        <section id="erd-visualizer" class="section-wrap">
+          <div class="section-header">
+            <div>
+              <h2 class="section-heading">🗄️ Database Schema & Relationship Studio</h2>
+              <p class="section-subheading">Complete PostgreSQL schema specification with Primary Keys, Foreign Keys, Enums, and Cascading Triggers</p>
+            </div>
+            <button class="pill-btn" onclick="copySchemaSql()">📋 Copy Full SQL Schema</button>
+          </div>
+
+          <div class="erd-grid">
+            <!-- Table 1: properties -->
+            <div class="erd-card" id="schema-properties">
+              <div class="erd-card-header">
+                <span class="erd-card-title">🏢 properties</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">name</span>
+                <span class="erd-type-info">VARCHAR(200)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">address</span>
+                <span class="erd-type-info">TEXT</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">property_type</span>
+                <span class="erd-type-info">ENUM (apt, villa, room)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">rental_type</span>
+                <span class="erd-type-info">ENUM (long, short, both)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">reference_price</span>
+                <span class="erd-type-info">NUMERIC(15,2)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">status</span>
+                <span class="erd-type-info">ENUM (vacant, occupied)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">photos</span>
+                <span class="erd-type-info">TEXT[]</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge fk">FK</span> created_by</span>
+                <span class="erd-type-info">UUID -> users(id)</span>
+              </div>
+            </div>
+
+            <!-- Table 2: tenants -->
+            <div class="erd-card" id="schema-tenants">
+              <div class="erd-card-header">
+                <span class="erd-card-title">👤 tenants</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">full_name</span>
+                <span class="erd-type-info">VARCHAR(100)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">id_number (CCCD)</span>
+                <span class="erd-type-info">VARCHAR(20) UNIQUE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">phone</span>
+                <span class="erd-type-info">VARCHAR(20) NOT NULL</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">email</span>
+                <span class="erd-type-info">VARCHAR(200)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">permanent_address</span>
+                <span class="erd-type-info">TEXT</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge fk">FK</span> created_by</span>
+                <span class="erd-type-info">UUID -> users(id)</span>
+              </div>
+            </div>
+
+            <!-- Table 3: contracts -->
+            <div class="erd-card" id="schema-contracts">
+              <div class="erd-card-header">
+                <span class="erd-card-title">📝 contracts</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">contract_number</span>
+                <span class="erd-type-info">VARCHAR(50) UNIQUE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge fk">FK</span> property_id</span>
+                <span class="erd-type-info">UUID -> properties(id)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge fk">FK</span> tenant_id</span>
+                <span class="erd-type-info">UUID -> tenants(id)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">start_date / end_date</span>
+                <span class="erd-type-info">DATE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">monthly_rent</span>
+                <span class="erd-type-info">NUMERIC(15,2)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">deposit</span>
+                <span class="erd-type-info">NUMERIC(15,2)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">payment_day</span>
+                <span class="erd-type-info">SMALLINT (1-28)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">status</span>
+                <span class="erd-type-info">ENUM (draft, active, expired)</span>
+              </div>
+            </div>
+
+            <!-- Table 4: payment_schedules -->
+            <div class="erd-card" id="schema-schedules">
+              <div class="erd-card-header">
+                <span class="erd-card-title">💳 payment_schedules</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge fk">FK</span> contract_id</span>
+                <span class="erd-type-info">UUID -> contracts(id)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">period_month / year</span>
+                <span class="erd-type-info">SMALLINT</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">amount_due</span>
+                <span class="erd-type-info">NUMERIC(15,2)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">due_date</span>
+                <span class="erd-type-info">DATE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">status</span>
+                <span class="erd-type-info">ENUM (pending, paid, overdue)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">receipt_url</span>
+                <span class="erd-type-info">TEXT (Google Drive Link)</span>
+              </div>
+            </div>
+
+            <!-- Table 5: payments -->
+            <div class="erd-card" id="schema-payments">
+              <div class="erd-card-header">
+                <span class="erd-card-title">💰 payments</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge fk">FK</span> payment_schedule_id</span>
+                <span class="erd-type-info">UUID -> payment_schedules(id)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">amount_paid</span>
+                <span class="erd-type-info">NUMERIC(15,2)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">payment_method</span>
+                <span class="erd-type-info">ENUM (bank_transfer, momo, cash)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">payment_date</span>
+                <span class="erd-type-info">DATE</span>
+              </div>
+            </div>
+
+            <!-- Table 6: bookings -->
+            <div class="erd-card" id="schema-bookings">
+              <div class="erd-card-header">
+                <span class="erd-card-title">📅 bookings</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">booking_number</span>
+                <span class="erd-type-info">VARCHAR(50) UNIQUE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge fk">FK</span> property_id</span>
+                <span class="erd-type-info">UUID -> properties(id)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">check_in / check_out</span>
+                <span class="erd-type-info">DATE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">guest_name / phone</span>
+                <span class="erd-type-info">VARCHAR(100)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">agreed_price</span>
+                <span class="erd-type-info">NUMERIC(15,2)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">status</span>
+                <span class="erd-type-info">ENUM (pending, confirmed, checked_in)</span>
+              </div>
+            </div>
+
+            <!-- Table 7: temp_residences -->
+            <div class="erd-card" id="schema-temp-res">
+              <div class="erd-card-header">
+                <span class="erd-card-title">🛡️ temp_residences</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">guest_name / id_number</span>
+                <span class="erd-type-info">VARCHAR(100)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">form_type</span>
+                <span class="erd-type-info">ENUM (CT01, CT07)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">status</span>
+                <span class="erd-type-info">ENUM (unsubmitted, accepted)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">police_station</span>
+                <span class="erd-type-info">VARCHAR(150)</span>
+              </div>
+            </div>
+
+            <!-- Table 8: documents -->
+            <div class="erd-card" id="schema-documents">
+              <div class="erd-card-header">
+                <span class="erd-card-title">📄 documents</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">entity_type / entity_id</span>
+                <span class="erd-type-info">VARCHAR(50) / UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">file_name / blob_path</span>
+                <span class="erd-type-info">VARCHAR(255) / VARCHAR(500)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">is_encrypted</span>
+                <span class="erd-type-info">BOOLEAN (AES-256)</span>
+              </div>
+            </div>
+
+            <!-- Table 9: notifications -->
+            <div class="erd-card" id="schema-notifications">
+              <div class="erd-card-header">
+                <span class="erd-card-title">🔔 notifications</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">channel</span>
+                <span class="erd-type-info">ENUM (email, zalo, sms, in_app)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">notification_type</span>
+                <span class="erd-type-info">ENUM (payment_reminder, overdue)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">content</span>
+                <span class="erd-type-info">TEXT</span>
+              </div>
+            </div>
+
+            <!-- Table 10: audit_logs -->
+            <div class="erd-card" id="schema-audit">
+              <div class="erd-card-header">
+                <span class="erd-card-title">📋 audit_logs</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge fk">FK</span> user_id</span>
+                <span class="erd-type-info">UUID -> users(id)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">action</span>
+                <span class="erd-type-info">VARCHAR(50)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">old_values / new_values</span>
+                <span class="erd-type-info">JSONB</span>
+              </div>
+            </div>
+
+            <!-- Table 11: users -->
+            <div class="erd-card" id="schema-users">
+              <div class="erd-card-header">
+                <span class="erd-card-title">🔑 users</span>
+                <span class="nav-tag db">TABLE</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info"><span class="key-badge pk">PK</span> id</span>
+                <span class="erd-type-info">UUID</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">full_name</span>
+                <span class="erd-type-info">VARCHAR(100)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">phone / email</span>
+                <span class="erd-type-info">VARCHAR(20) / VARCHAR(200)</span>
+              </div>
+              <div class="erd-row">
+                <span class="erd-col-info">role</span>
+                <span class="erd-type-info">ENUM (admin, owner, manager, tenant)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION: Cloudflare Edge APIs -->
+        <section class="section-wrap">
+          <div class="section-header">
+            <div>
+              <h2 class="section-heading">⚡ Cloudflare Edge Worker API Reference</h2>
+              <p class="section-subheading">High-performance edge proxy routes for Google Drive file operations and OTP authentication</p>
+            </div>
+          </div>
+
+          <!-- ENDPOINT 1: GET /api/drive/file/:fileId -->
+          <div class="endpoint-card" id="api-drive-file">
+            <div class="endpoint-meta-bar">
+              <span class="badge-method get">GET / HEAD</span>
+              <span class="endpoint-pathname">/api/drive/file/:fileId</span>
+            </div>
+            <p class="endpoint-description">
+              Streams full binary file media (images, PDFs, video, audio) directly from Google Drive through the Cloudflare Worker with HTTP 206 Partial Content (Byte-Range) acceleration.
+            </p>
+
+            <div class="subhead-label">Path Parameters</div>
+            <table class="specs-table">
+              <thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><code>fileId</code><span class="tag-mandatory">Required</span></td>
+                  <td><code>string</code></td>
+                  <td>Google Drive file alphanumeric ID string</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="subhead-label">Code Examples</div>
+            <div class="snippet-box">
+              <div class="snippet-bar">
+                <div class="snippet-tabs">
+                  <button class="tab-btn active">cURL</button>
+                  <button class="tab-btn">JavaScript</button>
+                  <button class="tab-btn">Python</button>
+                </div>
+                <button class="copy-snippet-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <pre><code>curl -i "https://booking-system-be.iluvsunset.workers.dev/api/drive/file/1nXSUrLoiR_SUV9Ethl5AqP6M_Xfjwl6g"</code></pre>
+            </div>
+          </div>
+
+          <!-- ENDPOINT 2: GET /api/drive/thumbnail/:fileId -->
+          <div class="endpoint-card" id="api-drive-thumb">
+            <div class="endpoint-meta-bar">
+              <span class="badge-method get">GET</span>
+              <span class="endpoint-pathname">/api/drive/thumbnail/:fileId</span>
+            </div>
+            <p class="endpoint-description">
+              Streams compressed, resized thumbnails directly from Google cache with dynamic sizing presets (<code>s400</code>, <code>s800</code>).
+            </p>
+
+            <div class="subhead-label">Query Parameters</div>
+            <table class="specs-table">
+              <thead><tr><th>Param</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><code>sz</code><span class="tag-optional">Optional</span></td>
+                  <td><code>string</code></td>
+                  <td><code>s400</code></td>
+                  <td>Size specification: <code>s400</code>, <code>s800</code>, <code>w1200</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ENDPOINT 3: POST /api/upload -->
+          <div class="endpoint-card" id="api-drive-upload">
+            <div class="endpoint-meta-bar">
+              <span class="badge-method post">POST</span>
+              <span class="endpoint-pathname">/api/upload</span>
+            </div>
+            <p class="endpoint-description">
+              Binary raw streaming upload directly into Google Drive with automatic multi-tier folder resolution.
+            </p>
+
+            <div class="subhead-label">HTTP Headers</div>
+            <table class="specs-table">
+              <thead><tr><th>Header</th><th>Type</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td><code>Content-Type</code><span class="tag-mandatory">Required</span></td><td><code>string</code></td><td>MIME type (e.g. <code>image/jpeg</code>)</td></tr>
+                <tr><td><code>X-File-Name</code><span class="tag-mandatory">Required</span></td><td><code>string</code></td><td>URL-encoded target filename</td></tr>
+                <tr><td><code>X-Category</code><span class="tag-optional">Optional</span></td><td><code>string</code></td><td><code>properties</code> | <code>users</code></td></tr>
+                <tr><td><code>X-Entity-Id</code><span class="tag-optional">Optional</span></td><td><code>string</code></td><td>Target entity ID or folder name</td></tr>
+              </tbody>
+            </table>
+
+            <div class="subhead-label">JSON Response (200 OK)</div>
+            <div class="snippet-box">
+              <div class="snippet-bar">
+                <div class="snippet-tabs"><button class="tab-btn active">JSON</button></div>
+                <button class="copy-snippet-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <pre><code>{
   "success": true,
-  "fileId": "1g9K8x_...",
+  "fileId": "1g9K8x_XYZ9876",
   "fileName": "photo_01.jpg",
-  "folderId": "1nXSUr...",
-  "url": "https://lh3.googleusercontent.com/d/1g9K8x_...",
-  "proxyUrl": "https://booking-system-be.iluvsunset.workers.dev/api/drive/file/1g9K8x_...",
-  "thumbnailUrl": "https://booking-system-be.iluvsunset.workers.dev/api/drive/thumbnail/1g9K8x_...",
-  "webViewLink": "https://drive.google.com/file/d/1g9K8x_.../view?usp=drivesdk"
-}</pre>
-      </div>
-    </div>
+  "url": "https://lh3.googleusercontent.com/d/1g9K8x_XYZ9876",
+  "proxyUrl": "https://booking-system-be.iluvsunset.workers.dev/api/drive/file/1g9K8x_XYZ9876",
+  "thumbnailUrl": "https://booking-system-be.iluvsunset.workers.dev/api/drive/thumbnail/1g9K8x_XYZ9876"
+}</code></pre>
+            </div>
+          </div>
 
-    <!-- SECTION: POST /api/drive/delete -->
-    <div class="endpoint-card" id="endpoint-delete-batch">
-      <div class="endpoint-header">
-        <span class="endpoint-badge post">POST</span>
-        <span class="endpoint-path">/api/drive/delete</span>
-      </div>
-      <p class="endpoint-desc">
-        Batch deletes multiple files or an entire category entity folder (e.g. all images belonging to a deleted Property or Tenant) from Google Drive.
-      </p>
+          <!-- ENDPOINT 4: POST /api/drive/delete -->
+          <div class="endpoint-card" id="api-drive-delete">
+            <div class="endpoint-meta-bar">
+              <span class="badge-method post">POST</span>
+              <span class="endpoint-pathname">/api/drive/delete</span>
+            </div>
+            <p class="endpoint-description">
+              Permanently deletes one or more files and/or an entire category entity folder from Google Drive (e.g. all images belonging to a deleted Property or Tenant).
+            </p>
 
-      <div class="section-title">Request Body (JSON)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Payload</span></div>
-        <pre>{
-  "fileIds": ["1g9K8x_...", "1h8J7y_..."],
-  "urls": ["https://booking-system-be.iluvsunset.workers.dev/api/drive/file/1g9K8x_..."],
+            <div class="subhead-label">JSON Body Payload</div>
+            <div class="snippet-box">
+              <div class="snippet-bar">
+                <div class="snippet-tabs"><button class="tab-btn active">JSON Request</button></div>
+                <button class="copy-snippet-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <pre><code>{
+  "fileIds": ["1g9K8x_XYZ9876"],
   "category": "properties",
   "entityId": "Villa_Sunrise_p1"
-}</pre>
-      </div>
+}</code></pre>
+            </div>
+          </div>
 
-      <div class="section-title">Response (200 OK)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Response</span></div>
-        <pre>{
-  "success": true,
-  "deletedCount": 2,
-  "deletedIds": ["1g9K8x_...", "1h8J7y_..."]
-}</pre>
-      </div>
+          <!-- ENDPOINT 5: POST /api/request-otp -->
+          <div class="endpoint-card" id="api-otp-request">
+            <div class="endpoint-meta-bar">
+              <span class="badge-method post">POST</span>
+              <span class="endpoint-pathname">/api/request-otp</span>
+            </div>
+            <p class="endpoint-description">
+              Generates a random 6-digit verification code, signs an edge-stateless cryptographic HMAC token (valid for 5 minutes), and dispatches the OTP via Gmail SMTP TLS.
+            </p>
+            <div class="snippet-box">
+              <div class="snippet-bar">
+                <div class="snippet-tabs"><button class="tab-btn active">cURL</button></div>
+                <button class="copy-snippet-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <pre><code>curl -X POST "https://booking-system-be.iluvsunset.workers.dev/api/request-otp" \\
+  -H "Content-Type: application/json" \\
+  -d '{"contact":"bao.h0146824@gmail.com"}'</code></pre>
+            </div>
+
+            <div class="tester-widget">
+              <div class="tester-top">
+                <span class="tester-title">Interactive API Runner</span>
+                <button class="send-test-btn" onclick="runLiveOtpTest(this)">▶ Test Request</button>
+              </div>
+              <div class="tester-output" id="otpTestOutput"></div>
+            </div>
+          </div>
+
+          <!-- ENDPOINT 6: POST /api/verify-otp -->
+          <div class="endpoint-card" id="api-otp-verify">
+            <div class="endpoint-meta-bar">
+              <span class="badge-method post">POST</span>
+              <span class="endpoint-pathname">/api/verify-otp</span>
+            </div>
+            <p class="endpoint-description">
+              Validates entered OTP against the signed <code>otpToken</code> using HMAC-SHA256 Web Crypto API. Works seamlessly across any Cloudflare Edge isolate.
+            </p>
+            <div class="snippet-box">
+              <div class="snippet-bar">
+                <div class="snippet-tabs"><button class="tab-btn active">cURL</button></div>
+                <button class="copy-snippet-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <pre><code>curl -X POST "https://booking-system-be.iluvsunset.workers.dev/api/verify-otp" \\
+  -H "Content-Type: application/json" \\
+  -d '{"contact":"bao.h0146824@gmail.com","otp":"849201","otpToken":"eyJjIjoiYmFv..."}'</code></pre>
+            </div>
+          </div>
+
+          <!-- ENDPOINT 7: POST /api/send-email -->
+          <div class="endpoint-card" id="api-send-email">
+            <div class="endpoint-meta-bar">
+              <span class="badge-method post">POST</span>
+              <span class="endpoint-pathname">/api/send-email</span>
+            </div>
+            <p class="endpoint-description">
+              Sends HTML emails directly via Gmail SMTP over TCP TLS sockets (port 465).
+            </p>
+            <div class="snippet-box">
+              <div class="snippet-bar">
+                <div class="snippet-tabs"><button class="tab-btn active">JSON Payload</button></div>
+                <button class="copy-snippet-btn" onclick="copySnippet(this)">Copy</button>
+              </div>
+              <pre><code>{
+  "to": "bao.h0146824@gmail.com",
+  "subject": "Thông báo hợp đồng thuê nhà",
+  "htmlContent": "&lt;h1&gt;Nhắc nhở thanh toán&lt;/h1&gt;&lt;p&gt;Kỳ thanh toán Tháng 08/2026 đã đến hạn.&lt;/p&gt;"
+}</code></pre>
+            </div>
+          </div>
+        </section>
+
+      </main>
     </div>
-
-    <!-- SECTION: POST /api/request-otp -->
-    <div class="endpoint-card" id="endpoint-req-otp">
-      <div class="endpoint-header">
-        <span class="endpoint-badge post">POST</span>
-        <span class="endpoint-path">/api/request-otp</span>
-      </div>
-      <p class="endpoint-desc">
-        Generates a 6-digit random verification code, signs an edge-stateless cryptographic HMAC token (valid for 5 minutes), and dispatches the OTP via Gmail SMTP TLS.
-      </p>
-
-      <div class="section-title">Request Body (JSON)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Payload</span></div>
-        <pre>{
-  "contact": "bao.h0146824@gmail.com"
-}</pre>
-      </div>
-
-      <div class="section-title">Response (200 OK)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Response</span></div>
-        <pre>{
-  "success": true,
-  "otpToken": "eyJjIjoiYmFvLmgwMTQ2ODI0QGdtYWlsLmNvbSIsImUiOjE3...",
-  "message": "Mã OTP đã được gửi đến email bao.h0146824@gmail.com",
-  "contact": "bao.h0146824@gmail.com"
-}</pre>
-      </div>
-    </div>
-
-    <!-- SECTION: POST /api/verify-otp -->
-    <div class="endpoint-card" id="endpoint-ver-otp">
-      <div class="endpoint-header">
-        <span class="endpoint-badge post">POST</span>
-        <span class="endpoint-path">/api/verify-otp</span>
-      </div>
-      <p class="endpoint-desc">
-        Validates entered OTP against the signed <code>otpToken</code> using HMAC-SHA256. Completely stateless and works across any Cloudflare Edge data center worldwide.
-      </p>
-
-      <div class="section-title">Request Body (JSON)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Payload</span></div>
-        <pre>{
-  "contact": "bao.h0146824@gmail.com",
-  "otp": "984273",
-  "otpToken": "eyJjIjoiYmFvLmgwMTQ2ODI0QGdtYWlsLmNvbSIsImUiOjE3..."
-}</pre>
-      </div>
-
-      <div class="section-title">Response (200 OK)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Response</span></div>
-        <pre>{
-  "success": true,
-  "verified": true,
-  "role": "owner",
-  "user": {
-    "fullName": "Nguyễn Văn Bảo",
-    "email": "bao.h0146824@gmail.com",
-    "phone": "0912345678"
-  }
-}</pre>
-      </div>
-    </div>
-
-    <!-- SECTION: POST /api/send-email -->
-    <div class="endpoint-card" id="endpoint-send-email">
-      <div class="endpoint-header">
-        <span class="endpoint-badge post">POST</span>
-        <span class="endpoint-path">/api/send-email</span>
-      </div>
-      <p class="endpoint-desc">
-        Sends HTML emails directly via Gmail SMTP over TCP TLS sockets (port 465). Used for OTP codes, contract notices, and payment reminders.
-      </p>
-
-      <div class="section-title">Request Body (JSON)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Payload</span></div>
-        <pre>{
-  "to": "customer@example.com",
-  "subject": "Thông báo hợp đồng thuê nhà #HD-001",
-  "htmlContent": "&lt;h1&gt;Xin chào!&lt;/h1&gt;&lt;p&gt;Hợp đồng của bạn đã được cập nhật.&lt;/p&gt;"
-}</pre>
-      </div>
-
-      <div class="section-title">Response (200 OK)</div>
-      <div class="code-container">
-        <div class="code-header"><span>JSON Response</span></div>
-        <pre>{
-  "success": true,
-  "message": "Email đã gửi thành công qua Gmail SMTP tới customer@example.com"
-}</pre>
-      </div>
-    </div>
-  </main>
+  </div>
 
   <script>
-    function copyText(text) {
-      navigator.clipboard.writeText(text);
-      alert('Copied to clipboard: ' + text);
+    function copyBaseUrl() {
+      navigator.clipboard.writeText('https://booking-system-be.iluvsunset.workers.dev');
+      alert('Copied Base URL: https://booking-system-be.iluvsunset.workers.dev');
     }
 
     function copySnippet(btn) {
-      const code = btn.closest('.code-container').querySelector('pre').innerText;
+      const code = btn.closest('.snippet-box').querySelector('pre code').innerText;
       navigator.clipboard.writeText(code);
       btn.innerText = '✓ Copied!';
       setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
     }
 
-    // Search filter
-    document.getElementById('searchBar').addEventListener('input', function(e) {
+    function copySchemaSql() {
+      const sql = \`-- BOOKING SYSTEM COMPLETE POSTGRESQL DDL
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE IF NOT EXISTS properties (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    property_type VARCHAR(50) DEFAULT 'apartment',
+    status VARCHAR(50) DEFAULT 'vacant',
+    reference_price NUMERIC(15,2) DEFAULT 0,
+    photos TEXT[] DEFAULT ARRAY[]::TEXT[],
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tenants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    full_name VARCHAR(100) NOT NULL,
+    id_number VARCHAR(20) UNIQUE NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(200),
+    permanent_address TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS contracts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    contract_number VARCHAR(50) UNIQUE NOT NULL,
+    property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    monthly_rent NUMERIC(15,2) NOT NULL,
+    deposit NUMERIC(15,2) NOT NULL DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'active'
+);\`;
+      navigator.clipboard.writeText(sql);
+      alert('Copied Full Database Schema SQL to Clipboard!');
+    }
+
+    async function runLiveOtpTest(btn) {
+      const output = document.getElementById('otpTestOutput');
+      output.style.display = 'block';
+      output.innerText = 'Sending live request to Cloudflare Edge...';
+      btn.disabled = true;
+      try {
+        const start = performance.now();
+        const res = await fetch('/api/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contact: 'bao.h0146824@gmail.com' })
+        });
+        const elapsed = Math.round(performance.now() - start);
+        const data = await res.json();
+        output.innerText = \`// Status: \${res.status} OK (\${elapsed}ms)\n\` + JSON.stringify(data, null, 2);
+      } catch (err) {
+        output.innerText = '// Error: ' + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Instant Search Filter
+    document.getElementById('docSearch').addEventListener('input', function(e) {
       const query = e.target.value.toLowerCase();
-      document.querySelectorAll('.endpoint-card').forEach(card => {
-        const text = card.innerText.toLowerCase();
-        card.style.display = text.includes(query) ? 'block' : 'none';
+      document.querySelectorAll('.erd-card, .endpoint-card').forEach(el => {
+        const txt = el.innerText.toLowerCase();
+        el.style.display = txt.includes(query) ? 'block' : 'none';
       });
     });
   </script>
