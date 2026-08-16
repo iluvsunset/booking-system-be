@@ -663,42 +663,9 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       color: var(--text-main);
     }
 
-    /* RIGHT ON-THIS-PAGE TOC */
-    .toc-col {
-      width: 240px;
-      padding: 36px 20px 80px;
-      overflow-y: auto;
-      flex-shrink: 0;
-      user-select: none;
-    }
-
-    @media (max-width: 1100px) {
-      .toc-col { display: none; }
+    @media (max-width: 900px) {
       .article-canvas { padding: 24px 20px 80px; }
-    }
-
-    .toc-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      font-weight: 800;
-      color: var(--text-muted);
-      letter-spacing: 0.08em;
-      margin-bottom: 12px;
-    }
-
-    .toc-link {
-      display: block;
-      color: var(--text-sub);
-      text-decoration: none;
-      font-size: 12px;
-      margin-bottom: 8px;
-      transition: all 0.15s ease;
-      line-height: 1.4;
-    }
-
-    .toc-link:hover {
-      color: var(--primary);
-      transform: translateX(3px);
+      .sidebar { width: 260px; }
     }
   </style>
 </head>
@@ -1159,24 +1126,6 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
 
       </div>
     </main>
-
-    <!-- RIGHT ON-THIS-PAGE TABLE OF CONTENTS -->
-    <aside class="toc-col">
-      <div class="toc-title">NỘI DUNG TRANG NÀY</div>
-      <a href="#section-overview" class="toc-link">⚡ Kiến trúc & Base URL</a>
-      <a href="#section-drive-tree" class="toc-link">📁 Cấu trúc thư mục Drive</a>
-      <a href="#api-stream" class="toc-link">1. Stream Media File</a>
-      <a href="#api-thumbnail" class="toc-link">2. Lấy Thumbnail</a>
-      <a href="#api-upload" class="toc-link">3. Tải lên Stream File</a>
-      <a href="#api-delete-batch" class="toc-link">4. Xóa Folder / Batch</a>
-      <a href="#api-request-otp" class="toc-link">5. Yêu cầu mã OTP</a>
-      <a href="#api-verify-otp" class="toc-link">6. Xác thực mã OTP</a>
-      <a href="#tbl-properties" class="toc-link">🗄️ Bảng properties</a>
-      <a href="#tbl-tenants" class="toc-link">🗄️ Bảng tenants</a>
-      <a href="#tbl-contracts" class="toc-link">🗄️ Bảng contracts</a>
-      <a href="#tbl-schedules" class="toc-link">🗄️ Bảng payment_schedules</a>
-      <a href="#section-error-codes" class="toc-link">⚠️ Mã lỗi & HTTP Status</a>
-    </aside>
 
   </div>
 
