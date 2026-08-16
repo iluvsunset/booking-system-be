@@ -8,6 +8,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tài liệu Tích hợp API & Cơ sở Dữ liệu — Booking System</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237C5C38'/%3E%3Cpath d='M16 6L6 14v11a1 1 0 0 0 1 1h6v-6h6v6h6a1 1 0 0 0 1-1V14L16 6z' fill='%23FFFFFF'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -674,7 +675,11 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
   <!-- VIETQR BLUE TOPBAR -->
   <header class="vietqr-header">
     <div class="header-brand">
-      <div class="brand-logo-sq">B</div>
+      <div class="brand-logo-sq">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20">
+          <path d="M16 6L6 14v11a1 1 0 0 0 1 1h6v-6h6v6h6a1 1 0 0 0 1-1V14L16 6z" fill="#346DDB"/>
+        </svg>
+      </div>
       <div class="brand-name">
         Booking System API <span class="header-tag">v2.5</span>
       </div>
