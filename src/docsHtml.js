@@ -138,58 +138,49 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
-    .header-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #FFF;
-      background: rgba(255,255,255,0.15);
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-weight: 500;
-    }
-
-    .dot-live {
-      width: 7px;
-      height: 7px;
-      background: #4ADE80;
-      border-radius: 50%;
-      box-shadow: 0 0 6px #4ADE80;
-    }
-
-    .header-btn {
-      background: #FFF;
-      color: var(--primary);
-      border: none;
-      padding: 6px 14px;
+    .topbar-action-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      padding: 6px 13px;
       border-radius: 6px;
       font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
+      transition: all 0.18s ease;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
-    .header-btn:hover {
-      background: #F1F5F9;
+    .topbar-action-btn:hover {
+      background: rgba(255, 255, 255, 0.24);
+      border-color: rgba(255, 255, 255, 0.4);
+      color: #FFFFFF;
       transform: translateY(-1px);
     }
 
-    .theme-toggle-btn {
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: #FFF;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
+    .topbar-action-btn.btn-github {
+      background: #FFFFFF;
+      color: #1E40AF;
+      border-color: #FFFFFF;
+    }
+
+    .topbar-action-btn.btn-github:hover {
+      background: #F8FAFC;
+      color: #1D4ED8;
+    }
+
+    .topbar-action-btn svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
     }
 
     /* =========================================================================
@@ -723,17 +714,18 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
     </div>
 
     <div class="header-actions">
-      <div class="header-pill">
-        <span class="dot-live"></span> Edge & DB Hoạt động
-      </div>
-      <button class="header-btn" onclick="copyBaseUrl()">
-        📋 Base URL
+      <button class="topbar-action-btn" onclick="copyBaseUrl()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        Base URL
       </button>
-      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối">
-        🌓 Sáng / Tối
+      <button class="topbar-action-btn" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        Sáng / Tối
       </button>
-      <a href="https://github.com/iluvsunset/booking-system-fe" target="_blank" class="header-btn">
-        GitHub ↗
+      <a href="https://github.com/iluvsunset/booking-system-fe" target="_blank" class="topbar-action-btn btn-github">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 11px; height: 11px; margin-left: -2px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
       </a>
     </div>
   </header>
