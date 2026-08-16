@@ -976,6 +976,41 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
           </table>
         </article>
 
+        <!-- API 4.1: Delete Single File -->
+        <article id="api-delete-single" class="doc-section">
+          <h2 class="section-heading">4.1 Xóa Tệp tin Đơn lẻ (Direct Delete)</h2>
+          <p class="lead-desc">
+            Xóa vĩnh viễn 1 tệp tin trên Google Drive theo mã <code>fileId</code> truyền trên URL đường dẫn mà không cần gửi body JSON.
+          </p>
+
+          <div class="endpoint-banner">
+            <div class="endpoint-info">
+              <span class="badge-endpoint del">DELETE</span>
+              <span class="endpoint-path">/api/drive/file/:fileId</span>
+            </div>
+            <button class="btn-copy" onclick="copyText('https://booking-system-be.iluvsunset.workers.dev/api/drive/file/:fileId')">Sao chép</button>
+          </div>
+
+          <h3 class="sub-heading">Path Parameters</h3>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Tham số</th><th>Kiểu</th><th>Bắt buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="col-name">fileId</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Mã Google Drive File ID cần xóa (VD: <code>1g9K8x_XYZ9876</code>)</td></tr>
+            </tbody>
+          </table>
+
+          <h3 class="sub-heading">Mẫu Request & Phản hồi</h3>
+          <div class="code-box">
+            <div class="code-header">
+              <div class="code-tabs"><button class="code-tab-btn active">cURL</button></div>
+              <button class="btn-copy-code" onclick="copySnippet(this)">Copy</button>
+            </div>
+            <pre><code>curl -X DELETE "https://booking-system-be.iluvsunset.workers.dev/api/drive/file/1g9K8x_XYZ9876"</code></pre>
+          </div>
+        </article>
+
         <!-- API 5: Request OTP -->
         <article id="api-request-otp" class="doc-section">
           <h2 class="section-heading">5. Yêu cầu Gửi mã OTP Xác thực</h2>
@@ -1029,6 +1064,48 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
               <tr><td><span class="col-name">otpToken</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Token HMAC nhận được từ bước yêu cầu OTP</td></tr>
             </tbody>
           </table>
+        </article>
+
+        <!-- API 7: Send Email HTML -->
+        <article id="api-send-email" class="doc-section">
+          <h2 class="section-heading">7. Gửi Email HTML Trực tiếp (Gmail SMTP TLS)</h2>
+          <p class="lead-desc">
+            Phát trực tiếp email định dạng HTML (thông báo tiền phòng, biên lai giao dịch, nhắc hạn hợp đồng) qua kết nối bảo mật SMTP TLS socket trên Cloudflare Edge Worker.
+          </p>
+
+          <div class="endpoint-banner">
+            <div class="endpoint-info">
+              <span class="badge-endpoint post">POST</span>
+              <span class="endpoint-path">/api/send-email</span>
+            </div>
+            <button class="btn-copy" onclick="copyText('https://booking-system-be.iluvsunset.workers.dev/api/send-email')">Sao chép</button>
+          </div>
+
+          <h3 class="sub-heading">Request Body (JSON)</h3>
+          <table class="vietqr-table">
+            <thead>
+              <tr><th>Trường</th><th>Kiểu</th><th>Bắt buộc</th><th>Mô tả</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="col-name">to</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Địa chỉ email người nhận (VD: <code>tenant@gmail.com</code>)</td></tr>
+              <tr><td><span class="col-name">subject</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Tiêu đề thư (VD: <code>[Booking System] Thông báo thanh toán</code>)</td></tr>
+              <tr><td><span class="col-name">html</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Nội dung HTML đầy đủ kèm CSS nhúng</td></tr>
+              <tr><td><span class="col-name">from</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td>Tên người gửi hiển thị (Mặc định cấu hình SMTP)</td></tr>
+            </tbody>
+          </table>
+
+          <h3 class="sub-heading">Mẫu JSON Payload & Phản hồi</h3>
+          <div class="code-box">
+            <div class="code-header">
+              <div class="code-tabs"><button class="code-tab-btn active">JSON Request Body</button></div>
+              <button class="btn-copy-code" onclick="copySnippet(this)">Copy</button>
+            </div>
+            <pre><code>{
+  "to": "khachhang@gmail.com",
+  "subject": "[Booking System] Xác nhận thanh toán tiền phòng Tháng 08/2026",
+  "html": "&lt;h1&gt;Cảm ơn bạn!&lt;/h1&gt;&lt;p&gt;Biên lai thanh toán tiền thuê phòng của bạn đã được ghi nhận.&lt;/p&gt;"
+}</code></pre>
+          </div>
         </article>
 
         <!-- DATABASE SCHEMAS (11 Tables) -->
@@ -1220,18 +1297,6 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
         </article>
 
         <!-- API: Delete Single File -->
-        <article id="api-delete-single" class="doc-section">
-          <h2 class="section-heading">Xóa Tệp tin đơn lẻ trực tiếp</h2>
-          <div class="endpoint-banner">
-            <div class="endpoint-info">
-              <span class="badge-endpoint del">DELETE</span>
-              <span class="endpoint-path">/api/drive/file/:fileId</span>
-            </div>
-            <button class="btn-copy" onclick="copyText('https://booking-system-be.iluvsunset.workers.dev/api/drive/file/:fileId')">Sao chép</button>
-          </div>
-          <p class="lead-desc">Xóa trực tiếp 1 tệp tin trên Google Drive theo mã File ID truyền trên URL đường dẫn.</p>
-        </article>
-
         <!-- HTTP ERROR CODES -->
         <article id="section-error-codes" class="doc-section">
           <h2 class="section-heading">Mã lỗi & Trạng thái HTTP (Error Reference)</h2>
