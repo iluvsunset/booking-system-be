@@ -689,7 +689,7 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
         Sáng / Tối
       </button>
-      <a href="https://github.com/iluvsunset/booking-system-fe" target="_blank" class="topbar-action-btn btn-github">
+      <a href="https://github.com/iluvsunset/booking-system-be" target="_blank" class="topbar-action-btn btn-github">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
         GitHub
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 11px; height: 11px; margin-left: -2px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
@@ -976,41 +976,6 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
           </table>
         </article>
 
-        <!-- API 4.1: Delete Single File -->
-        <article id="api-delete-single" class="doc-section">
-          <h2 class="section-heading">4.1 Xóa Tệp tin Đơn lẻ (Direct Delete)</h2>
-          <p class="lead-desc">
-            Xóa vĩnh viễn 1 tệp tin trên Google Drive theo mã <code>fileId</code> truyền trên URL đường dẫn mà không cần gửi body JSON.
-          </p>
-
-          <div class="endpoint-banner">
-            <div class="endpoint-info">
-              <span class="badge-endpoint del">DELETE</span>
-              <span class="endpoint-path">/api/drive/file/:fileId</span>
-            </div>
-            <button class="btn-copy" onclick="copyText('https://booking-system-be.iluvsunset.workers.dev/api/drive/file/:fileId')">Sao chép</button>
-          </div>
-
-          <h3 class="sub-heading">Path Parameters</h3>
-          <table class="vietqr-table">
-            <thead>
-              <tr><th>Tham số</th><th>Kiểu</th><th>Bắt buộc</th><th>Mô tả</th></tr>
-            </thead>
-            <tbody>
-              <tr><td><span class="col-name">fileId</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Mã Google Drive File ID cần xóa (VD: <code>1g9K8x_XYZ9876</code>)</td></tr>
-            </tbody>
-          </table>
-
-          <h3 class="sub-heading">Mẫu Request & Phản hồi</h3>
-          <div class="code-box">
-            <div class="code-header">
-              <div class="code-tabs"><button class="code-tab-btn active">cURL</button></div>
-              <button class="btn-copy-code" onclick="copySnippet(this)">Copy</button>
-            </div>
-            <pre><code>curl -X DELETE "https://booking-system-be.iluvsunset.workers.dev/api/drive/file/1g9K8x_XYZ9876"</code></pre>
-          </div>
-        </article>
-
         <!-- API 5: Request OTP -->
         <article id="api-request-otp" class="doc-section">
           <h2 class="section-heading">5. Yêu cầu Gửi mã OTP Xác thực</h2>
@@ -1064,48 +1029,6 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
               <tr><td><span class="col-name">otpToken</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Token HMAC nhận được từ bước yêu cầu OTP</td></tr>
             </tbody>
           </table>
-        </article>
-
-        <!-- API 7: Send Email HTML -->
-        <article id="api-send-email" class="doc-section">
-          <h2 class="section-heading">7. Gửi Email HTML Trực tiếp (Gmail SMTP TLS)</h2>
-          <p class="lead-desc">
-            Phát trực tiếp email định dạng HTML (thông báo tiền phòng, biên lai giao dịch, nhắc hạn hợp đồng) qua kết nối bảo mật SMTP TLS socket trên Cloudflare Edge Worker.
-          </p>
-
-          <div class="endpoint-banner">
-            <div class="endpoint-info">
-              <span class="badge-endpoint post">POST</span>
-              <span class="endpoint-path">/api/send-email</span>
-            </div>
-            <button class="btn-copy" onclick="copyText('https://booking-system-be.iluvsunset.workers.dev/api/send-email')">Sao chép</button>
-          </div>
-
-          <h3 class="sub-heading">Request Body (JSON)</h3>
-          <table class="vietqr-table">
-            <thead>
-              <tr><th>Trường</th><th>Kiểu</th><th>Bắt buộc</th><th>Mô tả</th></tr>
-            </thead>
-            <tbody>
-              <tr><td><span class="col-name">to</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Địa chỉ email người nhận (VD: <code>tenant@gmail.com</code>)</td></tr>
-              <tr><td><span class="col-name">subject</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Tiêu đề thư (VD: <code>[Booking System] Thông báo thanh toán</code>)</td></tr>
-              <tr><td><span class="col-name">html</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Nội dung HTML đầy đủ kèm CSS nhúng</td></tr>
-              <tr><td><span class="col-name">from</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td>Tên người gửi hiển thị (Mặc định cấu hình SMTP)</td></tr>
-            </tbody>
-          </table>
-
-          <h3 class="sub-heading">Mẫu JSON Payload & Phản hồi</h3>
-          <div class="code-box">
-            <div class="code-header">
-              <div class="code-tabs"><button class="code-tab-btn active">JSON Request Body</button></div>
-              <button class="btn-copy-code" onclick="copySnippet(this)">Copy</button>
-            </div>
-            <pre><code>{
-  "to": "khachhang@gmail.com",
-  "subject": "[Booking System] Xác nhận thanh toán tiền phòng Tháng 08/2026",
-  "html": "&lt;h1&gt;Cảm ơn bạn!&lt;/h1&gt;&lt;p&gt;Biên lai thanh toán tiền thuê phòng của bạn đã được ghi nhận.&lt;/p&gt;"
-}</code></pre>
-          </div>
         </article>
 
         <!-- DATABASE SCHEMAS (11 Tables) -->
@@ -1297,6 +1220,18 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
         </article>
 
         <!-- API: Delete Single File -->
+        <article id="api-delete-single" class="doc-section">
+          <h2 class="section-heading">Xóa Tệp tin đơn lẻ trực tiếp</h2>
+          <div class="endpoint-banner">
+            <div class="endpoint-info">
+              <span class="badge-endpoint del">DELETE</span>
+              <span class="endpoint-path">/api/drive/file/:fileId</span>
+            </div>
+            <button class="btn-copy" onclick="copyText('https://booking-system-be.iluvsunset.workers.dev/api/drive/file/:fileId')">Sao chép</button>
+          </div>
+          <p class="lead-desc">Xóa trực tiếp 1 tệp tin trên Google Drive theo mã File ID truyền trên URL đường dẫn.</p>
+        </article>
+
         <!-- HTTP ERROR CODES -->
         <article id="section-error-codes" class="doc-section">
           <h2 class="section-heading">Mã lỗi & Trạng thái HTTP (Error Reference)</h2>
@@ -1367,18 +1302,28 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
       }
     }
 
-    // Smooth scroll inside article canvas
+    // Precision smooth scroll inside article canvas
+    let isNavigating = false;
     function scrollToSection(hash) {
       if (!hash) return;
       const target = document.querySelector(hash);
       const container = document.querySelector('.article-canvas');
       if (target && container) {
-        const topPos = target.offsetTop - 20;
-        container.scrollTo({ top: topPos, behavior: 'smooth' });
+        isNavigating = true;
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + (targetRect.top - containerRect.top) - 24;
+
+        container.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: 'smooth'
+        });
 
         document.querySelectorAll('.nav-item').forEach(item => {
           item.classList.toggle('active', item.getAttribute('href') === hash);
         });
+
+        setTimeout(() => { isNavigating = false; }, 800);
       }
     }
 
@@ -1393,6 +1338,31 @@ export const API_DOCS_HTML = `<!DOCTYPE html>
         }
       });
     });
+
+    // Scrollspy: update sidebar active item during scrolling
+    const scrollContainer = document.querySelector('.article-canvas');
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', () => {
+        if (isNavigating) return;
+        const sections = document.querySelectorAll('.article-wrapper article');
+        const containerRect = scrollContainer.getBoundingClientRect();
+        
+        let activeSec = null;
+        sections.forEach(sec => {
+          const rect = sec.getBoundingClientRect();
+          if (rect.top <= containerRect.top + 80) {
+            activeSec = sec;
+          }
+        });
+
+        if (activeSec && activeSec.id) {
+          const hash = '#' + activeSec.id;
+          document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.toggle('active', item.getAttribute('href') === hash);
+          });
+        }
+      }, { passive: true });
+    }
 
     // Handle hash on page load or back/forward
     window.addEventListener('load', () => {
