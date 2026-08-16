@@ -8,7 +8,7 @@
  * 5. Server-Side OTP Generation & Verification
  * 6. Direct Gmail SMTP TLS Email Dispatch over TCP Sockets
  */
-// cloudflare:sockets is dynamically loaded inside sendSmtpEmail for Cloudflare runtime
+import { API_DOCS_HTML } from './docsHtml.js';
 
 const DEFAULT_ROOT_FOLDER_ID = '1nXSUrLoiR_SUV9Ethl5AqP6M_Xfjwl6g';
 const otpStore = new Map();
@@ -1062,20 +1062,41 @@ export default {
       }
     }
 
+    // Serve Interactive HTML Documentation for root and docs routes
+    if (
+      url.pathname === '/' ||
+      url.pathname === '/docs' ||
+      url.pathname === '/api/docs' ||
+      (request.headers.get('accept')?.includes('text/html') && !url.pathname.startsWith('/api/drive/'))
+    ) {
+      return new Response(API_DOCS_HTML, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600'
+        }
+      });
+    }
+
     return new Response(JSON.stringify({
       status: 'Booking System BE Worker Running',
+      version: '2.4.0',
       rootFolderId: DEFAULT_ROOT_FOLDER_ID,
+      docsUrl: `${url.origin}/docs`,
       endpoints: [
         'GET /api/drive/file/:fileId',
         'GET /api/drive/thumbnail/:fileId',
         'POST /api/upload',
+        'POST /api/drive/delete',
+        'DELETE /api/drive/file/:fileId',
         'POST /api/request-otp',
         'POST /api/verify-otp',
         'POST /api/send-email'
       ]
     }), {
       status: 200,
-      headers: { ...corsHeaders, 'content-type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 };
