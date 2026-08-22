@@ -92,8 +92,10 @@ export function getDriveClient() {
   return null;
 }
 
+const folderInflight = new Map();
+
 /**
- * Find or create a folder inside a parent folder in Google Drive with in-memory caching
+ * Find or create a folder inside a parent folder in Google Drive with in-memory caching and inflight deduplication
  */
 export async function findOrCreateFolder(drive, folderName, parentId = null) {
   const cleanName = sanitizeFolderSegment(folderName);
@@ -101,47 +103,59 @@ export async function findOrCreateFolder(drive, folderName, parentId = null) {
   if (folderCache.has(cacheKey)) {
     return folderCache.get(cacheKey);
   }
-
-  const escapedName = cleanName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  let q = `mimeType='application/vnd.google-apps.folder' and name='${escapedName}' and trashed=false`;
-  if (parentId) {
-    q += ` and '${parentId}' in parents`;
+  if (folderInflight.has(cacheKey)) {
+    return folderInflight.get(cacheKey);
   }
 
-  try {
-    const res = await drive.files.list({
-      q,
-      fields: 'files(id, name)',
-      spaces: 'drive',
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true
-    });
-
-    if (res.data.files && res.data.files.length > 0) {
-      const existingId = res.data.files[0].id;
-      folderCache.set(cacheKey, existingId);
-      return existingId;
+  const creationPromise = (async () => {
+    const escapedName = cleanName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    let q = `mimeType='application/vnd.google-apps.folder' and name='${escapedName}' and trashed=false`;
+    if (parentId) {
+      q += ` and '${parentId}' in parents`;
     }
 
-    // Create new folder
-    const fileMetadata = {
-      name: cleanName,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: parentId ? [parentId] : []
-    };
+    try {
+      const res = await drive.files.list({
+        q,
+        fields: 'files(id, name)',
+        spaces: 'drive',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
+      });
 
-    const folder = await drive.files.create({
-      requestBody: fileMetadata,
-      fields: 'id',
-      supportsAllDrives: true
-    });
+      if (res.data.files && res.data.files.length > 0) {
+        const existingId = res.data.files[0].id;
+        folderCache.set(cacheKey, existingId);
+        return existingId;
+      }
 
-    const newId = folder.data.id;
-    folderCache.set(cacheKey, newId);
-    return newId;
-  } catch (err) {
-    console.error(`[GoogleDrive] Error findOrCreateFolder (${cleanName}):`, err.message);
-    throw err;
+      // Create new folder
+      const fileMetadata = {
+        name: cleanName,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: parentId ? [parentId] : []
+      };
+
+      const folder = await drive.files.create({
+        requestBody: fileMetadata,
+        fields: 'id',
+        supportsAllDrives: true
+      });
+
+      const newId = folder.data.id;
+      folderCache.set(cacheKey, newId);
+      return newId;
+    } catch (err) {
+      console.error(`[GoogleDrive] Error findOrCreateFolder (${cleanName}):`, err.message);
+      throw err;
+    }
+  })();
+
+  folderInflight.set(cacheKey, creationPromise);
+  try {
+    return await creationPromise;
+  } finally {
+    folderInflight.delete(cacheKey);
   }
 }
 

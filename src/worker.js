@@ -161,8 +161,10 @@ async function fetchDriveWithRetry(url, options = {}, env) {
 // STRUCTURED GOOGLE DRIVE FOLDER HIERARCHY RESOLUTION
 // =========================================================================
 
+const folderInflight = new Map();
+
 /**
- * Finds or creates a folder inside a parent folder in Google Drive with in-memory caching
+ * Finds or creates a folder inside a parent folder in Google Drive with in-memory caching and inflight deduplication
  */
 async function findOrCreateFolder(accessToken, folderName, parentId = null, env = null) {
   const cleanName = sanitizeFolderSegment(folderName);
@@ -170,47 +172,59 @@ async function findOrCreateFolder(accessToken, folderName, parentId = null, env 
   if (folderCache.has(cacheKey)) {
     return folderCache.get(cacheKey);
   }
-
-  const escapedName = cleanName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  let q = `mimeType='application/vnd.google-apps.folder' and name='${escapedName}' and trashed=false`;
-  if (parentId) {
-    q += ` and '${parentId}' in parents`;
+  if (folderInflight.has(cacheKey)) {
+    return folderInflight.get(cacheKey);
   }
 
-  const listUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name)&spaces=drive`;
-  const listRes = await fetchDriveWithRetry(listUrl, {}, env);
-
-  if (listRes.ok) {
-    const listData = await listRes.json();
-    if (listData.files && listData.files.length > 0) {
-      const existingId = listData.files[0].id;
-      folderCache.set(cacheKey, existingId);
-      return existingId;
+  const creationPromise = (async () => {
+    const escapedName = cleanName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    let q = `mimeType='application/vnd.google-apps.folder' and name='${escapedName}' and trashed=false`;
+    if (parentId) {
+      q += ` and '${parentId}' in parents`;
     }
+
+    const listUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name)&spaces=drive`;
+    const listRes = await fetchDriveWithRetry(listUrl, {}, env);
+
+    if (listRes.ok) {
+      const listData = await listRes.json();
+      if (listData.files && listData.files.length > 0) {
+        const existingId = listData.files[0].id;
+        folderCache.set(cacheKey, existingId);
+        return existingId;
+      }
+    }
+
+    // Create new folder
+    const createRes = await fetchDriveWithRetry('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: cleanName,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: parentId ? [parentId] : []
+      })
+    }, env);
+
+    if (!createRes.ok) {
+      const errText = await createRes.text();
+      throw new Error(`Failed to create folder "${cleanName}": ${errText}`);
+    }
+
+    const createData = await createRes.json();
+    const newId = createData.id;
+    folderCache.set(cacheKey, newId);
+    return newId;
+  })();
+
+  folderInflight.set(cacheKey, creationPromise);
+  try {
+    return await creationPromise;
+  } finally {
+    folderInflight.delete(cacheKey);
   }
-
-  // Create new folder
-  const createRes = await fetchDriveWithRetry('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      name: cleanName,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: parentId ? [parentId] : []
-    })
-  }, env);
-
-  if (!createRes.ok) {
-    const errText = await createRes.text();
-    throw new Error(`Failed to create folder "${cleanName}": ${errText}`);
-  }
-
-  const createData = await createRes.json();
-  const newId = createData.id;
-  folderCache.set(cacheKey, newId);
-  return newId;
 }
 
 /**
@@ -259,21 +273,21 @@ async function resolveTargetFolder(accessToken, {
     return await findOrCreateFolderPath(accessToken, ['Properties', propFolder, 'Images'], rootId, env);
   }
 
-  if (category === 'users') {
+  if (category === 'tenants' || category === 'users') {
     if (subCategory === 'identification') {
-      return await findOrCreateFolderPath(accessToken, ['Users', userIdentifier, 'Identification'], rootId, env);
+      return await findOrCreateFolderPath(accessToken, ['Tenants', userIdentifier, 'Identification'], rootId, env);
     }
     if (subCategory === 'contracts') {
       const contractSub = sanitizeFolderSegment(entityId || 'general');
       const innerFolder = folderType === 'Files' ? 'Files' : 'Images';
-      return await findOrCreateFolderPath(accessToken, ['Users', userIdentifier, 'Contracts', contractSub, innerFolder], rootId, env);
+      return await findOrCreateFolderPath(accessToken, ['Tenants', userIdentifier, 'Contracts', contractSub, innerFolder], rootId, env);
     }
     if (subCategory === 'payments') {
       const payPeriod = sanitizeFolderSegment(period || 'General_Period');
-      return await findOrCreateFolderPath(accessToken, ['Users', userIdentifier, 'Payments', payPeriod], rootId, env);
+      return await findOrCreateFolderPath(accessToken, ['Tenants', userIdentifier, 'Payments', payPeriod], rootId, env);
     }
     const innerFolder = folderType === 'Files' ? 'Files' : 'Images';
-    return await findOrCreateFolderPath(accessToken, ['Users', userIdentifier, innerFolder], rootId, env);
+    return await findOrCreateFolderPath(accessToken, ['Tenants', userIdentifier, innerFolder], rootId, env);
   }
 
   // Fallback: Legacy Files/Images organization
@@ -366,7 +380,7 @@ async function uploadToGoogleDrive({
     console.warn('[GoogleDrive Permission Warning]', permErr.message);
   }
 
-  const originBase = requestOrigin || 'https://booking-system-be.iluvsunset.workers.dev';
+  const originBase = requestOrigin || env?.BACKEND_URL || env?.BE_URL || env?.ORIGIN || 'https://booking-system-be.iluvsunset.workers.dev';
   const proxyUrl = `${originBase}/api/drive/file/${fileId}`;
   const thumbnailProxyUrl = `${originBase}/api/drive/thumbnail/${fileId}`;
   const webViewLink = fileData.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
@@ -1062,12 +1076,12 @@ export default {
       }
     }
 
-    // Serve Interactive HTML Documentation for root and docs routes
+    // Serve Interactive HTML Documentation when requested by browser, or JSON for API calls
+    const acceptsHtml = request.headers.get('accept')?.includes('text/html');
     if (
-      url.pathname === '/' ||
       url.pathname === '/docs' ||
       url.pathname === '/api/docs' ||
-      (request.headers.get('accept')?.includes('text/html') && !url.pathname.startsWith('/api/drive/'))
+      (url.pathname === '/' && acceptsHtml)
     ) {
       return new Response(API_DOCS_HTML, {
         status: 200,
