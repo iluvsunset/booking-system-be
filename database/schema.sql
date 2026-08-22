@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     full_name TEXT NOT NULL,
     phone TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE,
-    role TEXT DEFAULT 'guest',              -- 'owner', 'manager', 'sale', 'tenant', 'guest', 'admin'
+    role TEXT DEFAULT 'guest',              -- 'owner', 'manager', 'sale', 'tenant', 'guest'
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
