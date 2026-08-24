@@ -205,21 +205,25 @@ export async function resolveTargetFolder(drive, {
     return await findOrCreateFolderPath(drive, ['Properties', propFolder, 'Images'], rootId);
   }
 
-  if (category === 'users') {
+  if (category === 'tenants' || category === 'users') {
     if (subCategory === 'identification') {
-      return await findOrCreateFolderPath(drive, ['Users', userIdentifier, 'Identification'], rootId);
+      return await findOrCreateFolderPath(drive, ['Tenants', userIdentifier, 'Identification'], rootId);
     }
     if (subCategory === 'contracts') {
       const contractSub = sanitizeFolderSegment(entityId || 'general');
       const innerFolder = folderType === 'Files' ? 'Files' : 'Images';
-      return await findOrCreateFolderPath(drive, ['Users', userIdentifier, 'Contracts', contractSub, innerFolder], rootId);
+      return await findOrCreateFolderPath(drive, ['Tenants', userIdentifier, 'Contracts', contractSub, innerFolder], rootId);
     }
     if (subCategory === 'payments') {
       const payPeriod = sanitizeFolderSegment(period || 'General_Period');
-      return await findOrCreateFolderPath(drive, ['Users', userIdentifier, 'Payments', payPeriod], rootId);
+      return await findOrCreateFolderPath(drive, ['Tenants', userIdentifier, 'Payments', payPeriod], rootId);
+    }
+    if (subCategory === 'maintenance') {
+      const incidentSub = sanitizeFolderSegment(entityId || 'general');
+      return await findOrCreateFolderPath(drive, ['Tenants', userIdentifier, 'Maintenance', incidentSub], rootId);
     }
     const innerFolder = folderType === 'Files' ? 'Files' : 'Images';
-    return await findOrCreateFolderPath(drive, ['Users', userIdentifier, innerFolder], rootId);
+    return await findOrCreateFolderPath(drive, ['Tenants', userIdentifier, innerFolder], rootId);
   }
 
   // Fallback: Legacy Files/Images organization

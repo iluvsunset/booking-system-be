@@ -286,6 +286,10 @@ async function resolveTargetFolder(accessToken, {
       const payPeriod = sanitizeFolderSegment(period || 'General_Period');
       return await findOrCreateFolderPath(accessToken, ['Tenants', userIdentifier, 'Payments', payPeriod], rootId, env);
     }
+    if (subCategory === 'maintenance') {
+      const incidentSub = sanitizeFolderSegment(entityId || 'general');
+      return await findOrCreateFolderPath(accessToken, ['Tenants', userIdentifier, 'Maintenance', incidentSub], rootId, env);
+    }
     const innerFolder = folderType === 'Files' ? 'Files' : 'Images';
     return await findOrCreateFolderPath(accessToken, ['Tenants', userIdentifier, innerFolder], rootId, env);
   }
@@ -818,7 +822,8 @@ export default {
         if (category && entityId) {
           try {
             const rootFolderId = extractFolderId(env?.GOOGLE_DRIVE_FOLDER_ID) || DEFAULT_ROOT_FOLDER_ID;
-            const categoryName = category.toLowerCase() === 'properties' ? 'Properties' : 'Users';
+            const categoryLower = (category || '').toLowerCase();
+            const categoryName = categoryLower === 'properties' ? 'Properties' : (categoryLower === 'tenants' ? 'Tenants' : 'Users');
             const catFolderId = await findOrCreateFolder(null, categoryName, rootFolderId, env);
             const targetFolderId = await findOrCreateFolder(null, entityId, catFolderId, env);
             if (targetFolderId) {

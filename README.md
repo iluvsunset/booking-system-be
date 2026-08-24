@@ -29,9 +29,8 @@ My Drive / Booking System Drive /
 │       │       └── HopDong_*.pdf
 │       ├── Maintenance /
 │       │   └── [Incident Category] - [DD-MM-YYYY] /
-│       │       └── Images /
-│       │           ├── incident_*.jpg
-│       │           └── incident_*.png
+│       │       ├── incident_*.jpg
+│       │       └── incident_*.png
 │       └── Payments /
 │           └── [Payment_Period] /
 │               └── Images /
