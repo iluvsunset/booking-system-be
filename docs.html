@@ -925,9 +925,10 @@
             <tbody>
               <tr><td><span class="col-name">Content-Type</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>MIME type của file (Ví dụ: <code>image/jpeg</code>)</td></tr>
               <tr><td><span class="col-name">X-File-Name</span></td><td><span class="col-type">string</span></td><td><span class="badge-req">Bắt buộc</span></td><td>Tên file URL-encoded (Ví dụ: <code>photo_01.jpg</code>)</td></tr>
-              <tr><td><span class="col-name">X-Category</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td><code>properties</code> | <code>users</code></td></tr>
-              <tr><td><span class="col-name">X-Sub-Category</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td><code>identification</code>, <code>contracts</code>, <code>payments</code></td></tr>
-              <tr><td><span class="col-name">X-Entity-Id</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td>Mã định danh đối tượng (Tên phòng hoặc Khách thuê)</td></tr>
+              <tr><td><span class="col-name">X-Category</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td><code>properties</code> | <code>tenants</code> | <code>users</code></td></tr>
+              <tr><td><span class="col-name">X-Sub-Category</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td><code>identification</code>, <code>contracts</code>, <code>maintenance</code>, <code>payments</code></td></tr>
+              <tr><td><span class="col-name">X-Folder-Path</span></td><td><span class="col-type">string (JSON)</span></td><td><span class="badge-opt">Tùy chọn</span></td><td>JSON Array phân cấp thư mục cụ thể (Ví dụ: <code>["Tenants", "Lý Gia Bảo - 0559015719", "Maintenance", "Điều hòa không mát - 24-08-2026", "Images"]</code>)</td></tr>
+              <tr><td><span class="col-name">X-Entity-Id</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td>Mã định danh đối tượng (Tên phòng, Mã hợp đồng hoặc Thư mục sự cố)</td></tr>
               <tr><td><span class="col-name">X-Period</span></td><td><span class="col-type">string</span></td><td><span class="badge-opt">Tùy chọn</span></td><td>Kỳ thanh toán (Ví dụ: <code>Thang_08_2026</code>)</td></tr>
             </tbody>
           </table>
